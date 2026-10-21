@@ -27,7 +27,6 @@
     .panel-header img { height: 28px; }
     .panel-body { padding: 20px; display: flex; flex-direction: column;}
 
-    /* Tombol Sync */
     .btn-sync { background-color: #333; color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: 600; width: 100%; margin-bottom: 20px; transition: 0.2s; font-size: 0.95rem; }
     .btn-sync:hover { background-color: #111; }
     .btn-sync:disabled { background-color: #666; cursor: not-allowed; }
@@ -60,7 +59,6 @@
 
     .idle-state { text-align: center; color: #888; margin: 30px 0; }
 
-    /* Riwayat */
     .history-box { border-top: 1px solid #eee; padding-top: 15px; }
     .history-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;}
     .history-title { font-size: 0.85rem; font-weight: 600; color: #666; }
@@ -89,9 +87,8 @@
       </div>
       <div class="panel-body">
         
-        <!-- TOMBOL SINKRONISASI -->
         <button class="btn-sync" id="btn-sync" onclick="syncData()">
-          🔄 Sinkronisasi Data SPS (Klik Sebelum Mulai Sesi)
+          🔄 Sinkronisasi Data SPS (Klik Sebelum Mulai)
         </button>
 
         <div id="reader"></div>
@@ -99,9 +96,9 @@
         <div class="guide-mini">
           <strong>📖 Panduan Pengurus:</strong>
           <ol>
-            <li><strong>Wajib klik tombol Sinkronisasi hitam di atas</strong> sebelum mulai acara datang maupun pulang.</li>
-            <li>Arahkan QR ke area pindai. UI akan otomatis mendeteksi status datang/pulang tanpa loading.</li>
-            <li>Centang <i>Entry Ticket</i> khusus untuk kedatangan awal.</li>
+            <li><strong>Wajib Sinkronisasi</strong> sebelum mulai sesi.</li>
+            <li>Arahkan QR ke area pindai.</li>
+            <li>Klik Kirim. Layar akan otomatis kembali ke kamera seketika!</li>
           </ol>
           <div class="alert-mini">⚠️ Bila terjadi kesalahan teknis (lag/error), segera beralih catat manual di Google Sheet SPS!</div>
         </div>
@@ -113,24 +110,20 @@
       <div class="panel-header" style="background-color: #333;">Verifikasi & Riwayat</div>
       <div class="panel-body">
         
-        <!-- Idle -->
         <div class="idle-state" id="idle-state">
           <p>Sistem Siap. Menunggu pindaian kamera...</p>
         </div>
 
-        <!-- Form Konfirmasi -->
         <div class="form-review" id="form-review">
           <h3 id="form-title">Konfirmasi Kedatangan</h3>
           <div class="scanned-info" id="display-nama">-</div>
           <div class="scanned-nim" id="display-nim">-</div>
           
-          <!-- Box Tambahan Khusus Pulang -->
           <div class="pulang-info-box" id="box-pulang-info">
             <strong>Kedatangan:</strong> <span id="display-waktuD"></span><br>
             <strong>Catatan Awal:</strong> <span id="display-noteD"></span>
           </div>
           
-          <!-- Opsi Ticket Khusus Datang -->
           <div class="input-group" id="group-ticket">
             <label class="checkbox-label">
               <input type="checkbox" id="input-ticket"> Membawa Entry Ticket
@@ -147,7 +140,6 @@
           </div>
         </div>
 
-        <!-- Riwayat -->
         <div class="history-box">
           <div class="history-header">
              <div class="history-title">Riwayat Perangkat Ini:</div>
@@ -166,6 +158,7 @@
     const urlGoogleScript = "https://script.google.com/macros/s/AKfycbyL1RtuBShto37PYmd17FTBaZ3gF3o15G7FDoafA8vf0rTtsYJcjnygBhe2nT0tqK3k/exec";
 
     let isProcessing = false;
+    let isSubmitting = false; // Flag Anti-Dobel Klik
     let qrDataSementara = ""; 
     let namaSementara = "";
     let nimSementara = "";
@@ -175,13 +168,10 @@
     const readerDiv = document.getElementById('reader');
     const historyContainer = document.getElementById('history-container');
 
-    // MENGELOLA DATABASE LOKAL (0 Detik Loading)
     let localDB = JSON.parse(localStorage.getItem('dbInfinity')) || {};
-    
-    // MENGELOLA RIWAYAT LOKAL
     let historyList = JSON.parse(localStorage.getItem('absensiHistory')) || [];
 
-    // FUNGSI SINKRONISASI MANUAL
+    // FUNGSI SINKRONISASI 
     function syncData() {
       const btn = document.getElementById('btn-sync');
       btn.innerText = "⏳ Mengunduh Database SPS...";
@@ -192,9 +182,9 @@
         .then(data => {
            localDB = data;
            localStorage.setItem('dbInfinity', JSON.stringify(data));
-           alert("✅ Berhasil! " + Object.keys(data).length + " data peserta telah disinkronkan ke HP ini.");
+           alert("✅ Berhasil! Data SPS telah tersinkronisasi.");
            btn.innerText = "✅ Data SPS Ter-update";
-           setTimeout(() => { btn.innerText = "🔄 Sinkronisasi Data SPS (Klik Sebelum Mulai Sesi)"; btn.disabled = false; }, 4000);
+           setTimeout(() => { btn.innerText = "🔄 Sinkronisasi Data SPS (Klik Sebelum Mulai)"; btn.disabled = false; }, 3000);
         })
         .catch(err => {
            alert("❌ Gagal terhubung ke server. Pastikan internet aktif.");
@@ -232,7 +222,7 @@
     }
     renderHistory();
 
-    // FUNGSI SCANNER (Pengecekan Instan)
+    // FUNGSI SCANNER
     function onScanSuccess(decodedText, decodedResult) {
       if (isProcessing) return;
       isProcessing = true; 
@@ -246,7 +236,6 @@
       formReview.style.display = 'none';
       readerDiv.classList.add('blur-scanner'); 
 
-      // Pengecekan tanpa loading internet! (Membaca cache)
       let person = localDB[nimSementara.trim()];
 
       if (!person || person.rgsD !== true) {
@@ -254,12 +243,11 @@
       } else if (person.rgsP !== true) {
           setupUI_Pulang(namaSementara, nimSementara, person.waktuD, person.note);
       } else {
-          alert("⚠️ Peserta " + namaSementara + " sudah menyelesaikan absen pulang!");
+          alert("⚠️ Peserta " + namaSementara + " sudah absen pulang!");
           batalkanScan();
       }
     }
 
-    // PENGATUR UI KEDATANGAN
     function setupUI_Datang(nama, nim) {
       document.getElementById('form-title').innerText = "Konfirmasi Kedatangan";
       document.getElementById('form-title').style.color = "var(--primary-color)";
@@ -279,7 +267,6 @@
       formReview.style.display = 'block';
     }
 
-    // PENGATUR UI KEPULANGAN
     function setupUI_Pulang(nama, nim, waktuD, noteD) {
       document.getElementById('form-title').innerText = "Konfirmasi Kepulangan";
       document.getElementById('form-title').style.color = "var(--blue-color)";
@@ -296,7 +283,7 @@
       formReview.style.borderColor = "var(--blue-color)";
       
       document.getElementById('input-note').value = "";
-      document.getElementById('input-note').placeholder = "Catatan Pulang (Opsional, akan otomatis digabung)...";
+      document.getElementById('input-note').placeholder = "Catatan Pulang (Opsional)...";
       
       formReview.style.display = 'block';
     }
@@ -308,46 +295,45 @@
       isProcessing = false; 
     }
 
-    // Eksekusi Pengiriman
+    // FUNGSI SUBMIT (FIRE-AND-FORGET / INSTANT)
     function submitData() {
-      const btnKirim = document.getElementById('btn-kirim');
-      btnKirim.innerText = "Memproses...";
-      btnKirim.disabled = true;
+      if (isSubmitting) return; // Kunci Mutlak Anti Dobel Klik
+      isSubmitting = true;
 
       const isTicket = document.getElementById('input-ticket').checked;
       const noteVal = document.getElementById('input-note').value;
+      const nama = namaSementara;
+      const nimKey = nimSementara.trim();
 
       const submitUrl = urlGoogleScript 
         + "?action=submit&data=" + encodeURIComponent(qrDataSementara) 
         + "&ticket=" + isTicket 
         + "&note=" + encodeURIComponent(noteVal);
 
-      fetch(submitUrl)
-        .then(response => response.text())
-        .then(hasil => {
-          addHistory(hasil); 
-          
-          // Memperbarui database lokal agar tidak salah scan 2x
-          let nimKey = nimSementara.trim();
-          if (!localDB[nimKey]) {
-             localDB[nimKey] = { rgsD: true, waktuD: "Baru saja", rgsP: false, note: noteVal };
-          } else if (!localDB[nimKey].rgsD) {
-             localDB[nimKey].rgsD = true;
-             localDB[nimKey].note = noteVal;
-          } else {
-             localDB[nimKey].rgsP = true;
-          }
-          localStorage.setItem('dbInfinity', JSON.stringify(localDB));
+      // 1. Eksekusi Background Tanpa Ditunggu!
+      fetch(submitUrl).catch(error => {
+          alert("⚠️ Gagal mengirim data " + nama + "! Cek internet Anda.");
+      });
 
-          btnKirim.innerText = "Kirim Data";
-          btnKirim.disabled = false;
-          batalkanScan(); 
-        })
-        .catch(error => {
-          alert("Gagal mengirim data. Coba lagi.");
-          btnKirim.innerText = "Kirim Data";
-          btnKirim.disabled = false;
-        });
+      // 2. Pembaruan LOKAL SECARA INSTAN
+      let statusTeks = "";
+      if (!localDB[nimKey]) {
+         localDB[nimKey] = { rgsD: true, waktuD: "Baru saja", rgsP: false, note: noteVal };
+         statusTeks = "✅ Datang: " + nama;
+      } else if (!localDB[nimKey].rgsD) {
+         localDB[nimKey].rgsD = true;
+         localDB[nimKey].note = noteVal;
+         statusTeks = "✅ Datang: " + nama;
+      } else {
+         localDB[nimKey].rgsP = true;
+         statusTeks = "👋 Pulang: " + nama;
+      }
+      localStorage.setItem('dbInfinity', JSON.stringify(localDB));
+      addHistory(statusTeks);
+
+      // 3. Reset form seketika (Kembali jadi Scanner dalam 0.1 detik)
+      isSubmitting = false;
+      batalkanScan(); 
     }
 
     var html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: { width: 250, height: 250 } }, false);
