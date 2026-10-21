@@ -3,241 +3,236 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sistem Absensi INFINITY</title>
-  
-  <!-- Font Inter: Profesional, Bersih, dan Elegan -->
+  <title>Registrasi INFINITY</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  
-  <!-- Library QR Scanner -->
   <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
   
   <style>
-    /* Variabel Warna Tema (Terinspirasi dari Dashboard Ciputra) */
     :root {
-      --primary-color: #f2791d; /* Oranye khas dashboard */
+      --primary-color: #f2791d;
       --primary-hover: #d96a17;
-      --text-dark: #333333;
-      --text-muted: #666666;
       --bg-white: #ffffff;
       --border-color: #e0e0e0;
+      --text-dark: #333333;
     }
-
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
     
     body { 
-      font-family: 'Inter', sans-serif; 
-      
-      /* GANTI BACKGROUND DI SINI */
-      background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('bg-infinity.jpg') no-repeat center center fixed; 
+      background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('bg-infinity.jpg') no-repeat center fixed; 
       background-size: cover; 
-      
-      display: flex; 
-      flex-direction: column; 
-      align-items: center; 
-      justify-content: center;
-      min-height: 100vh;
-      padding: 20px;
-    }
-
-    /* Kotak Utama bergaya Panel Dashboard */
-    .card {
-      background: var(--bg-white);
-      border-radius: 6px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.25);
-      width: 100%;
-      max-width: 550px;
-      overflow: hidden; 
-    }
-
-    /* Header Panel Oranye */
-    .card-header {
-      background-color: var(--primary-color);
-      padding: 18px 20px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 15px;
-    }
-
-    /* GANTI LOGO INFINITY DI SINI */
-    .card-header img {
-      height: 35px; /* Tinggi logo, otomatis menyesuaikan proporsi */
-      width: auto;
-    }
-
-    .card-header h1 {
-      color: white;
-      font-size: 1.15rem;
-      font-weight: 600;
-      letter-spacing: 0.5px;
-      margin: 0;
-    }
-
-    .card-body {
-      padding: 25px;
-    }
-
-    /* Kotak Panduan */
-    .guide-box {
-      background-color: #fdfdfd;
-      border: 1px solid var(--border-color);
-      border-left: 4px solid var(--primary-color);
-      padding: 15px;
-      border-radius: 4px;
-      margin-bottom: 20px;
-      text-align: left;
-    }
-
-    .guide-box h3 {
-      font-size: 0.95rem;
       color: var(--text-dark);
-      margin-bottom: 8px;
-      font-weight: 600;
+      display: flex; align-items: center; justify-content: center;
+      min-height: 100vh; padding: 20px;
     }
 
-    .guide-box ol {
-      padding-left: 20px;
-      color: var(--text-muted);
-      font-size: 0.85rem;
-      line-height: 1.6;
-    }
-
-    /* Kustomisasi Tampilan Web Scanner */
-    #reader {
+    /* Container Split Layout */
+    .dashboard-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      max-width: 1000px;
       width: 100%;
-      border: 1px solid var(--border-color) !important;
-      border-radius: 4px;
+    }
+
+    .panel {
+      background: var(--bg-white);
+      border-radius: 8px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+      flex: 1;
+      min-width: 320px;
       overflow: hidden;
-      background: #f9f9f9;
+      display: flex; flex-direction: column;
     }
 
-    /* Memaksa elemen bawaan library agar seragam dengan tema */
-    #reader__dashboard_section_csr span { font-family: 'Inter', sans-serif !important; color: var(--text-dark); }
-    #reader button {
-      background-color: var(--primary-color) !important;
-      color: white !important;
-      border: none !important;
-      padding: 8px 16px !important;
-      border-radius: 4px !important;
-      font-family: 'Inter', sans-serif !important;
-      font-size: 0.85rem !important;
-      font-weight: 500 !important;
-      cursor: pointer !important;
-      transition: 0.2s !important;
-      margin: 5px !important;
+    .panel-header {
+      background-color: var(--primary-color);
+      color: white; padding: 15px 20px;
+      font-weight: 600; font-size: 1.1rem;
+      display: flex; align-items: center; gap: 10px;
     }
-    #reader button:hover { background-color: var(--primary-hover) !important; }
-    #reader select {
-      padding: 8px !important;
-      border-radius: 4px !important;
-      border: 1px solid var(--border-color) !important;
-      font-family: 'Inter', sans-serif !important;
-      font-size: 0.85rem !important;
-      margin-bottom: 10px !important;
-      max-width: 100% !important;
-    }
-    #reader a { color: var(--primary-color) !important; text-decoration: none !important; font-weight: 500 !important; }
+    .panel-header img { height: 28px; }
 
-    /* Notifikasi Status */
-    #status {
-      margin-top: 20px;
-      padding: 12px 15px;
-      font-size: 0.9rem;
-      font-weight: 500;
-      text-align: center;
-      border-radius: 4px;
-      border: 1px solid var(--border-color);
-      background-color: #f8f9fa;
-      color: var(--text-muted);
-    }
+    .panel-body { padding: 20px; flex-grow: 1; display: flex; flex-direction: column;}
 
-    .footer {
-      margin-top: 20px;
-      color: rgba(255, 255, 255, 0.7);
-      font-size: 0.8rem;
-      text-align: center;
-      font-weight: 400;
-    }
+    /* Styling Scanner */
+    #reader { width: 100%; border-radius: 6px; overflow: hidden; border: 1px solid var(--border-color); }
+    #reader button { background: var(--primary-color) !important; color: white !important; border: none !important; padding: 8px 12px !important; border-radius: 4px !important; cursor: pointer; }
+
+    /* Area Form Review */
+    .form-review { display: none; background: #fdfdfd; border: 2px dashed var(--primary-color); border-radius: 6px; padding: 15px; margin-bottom: 20px; }
+    .form-review h3 { color: var(--primary-color); margin-bottom: 10px; font-size: 1.1rem;}
+    .scanned-info { font-size: 1.2rem; font-weight: 700; margin-bottom: 5px; color: #111;}
+    .scanned-nim { font-size: 0.9rem; color: #666; margin-bottom: 15px;}
+    
+    /* Input Form */
+    .input-group { margin-bottom: 15px; }
+    .checkbox-label { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 1rem; cursor: pointer; background: #f0f0f0; padding: 12px; border-radius: 6px; }
+    .checkbox-label input { width: 20px; height: 20px; accent-color: var(--primary-color); }
+    
+    .text-input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 0.9rem; resize: vertical; }
+
+    /* Tombol Aksi */
+    .btn-group { display: flex; gap: 10px; }
+    .btn { flex: 1; padding: 12px; border: none; border-radius: 6px; font-weight: 600; font-size: 1rem; cursor: pointer; color: white; transition: 0.2s;}
+    .btn-submit { background-color: #198754; }
+    .btn-submit:hover { background-color: #157347; }
+    .btn-cancel { background-color: #dc3545; }
+    .btn-cancel:hover { background-color: #bb2d3b; }
+
+    /* Idle State & History */
+    .idle-state { text-align: center; color: #888; margin: auto 0; }
+    .history-box { margin-top: auto; border-top: 1px solid #eee; padding-top: 15px; }
+    .history-title { font-size: 0.85rem; font-weight: 600; color: #666; margin-bottom: 8px;}
+    .history-item { background: #eef; padding: 10px; border-radius: 6px; border-left: 4px solid var(--primary-color); font-size: 0.9rem; }
+    .history-time { font-weight: bold; color: var(--primary-color); margin-right: 5px;}
+
+    .blur-scanner { filter: blur(4px) grayscale(50%); pointer-events: none; }
   </style>
 </head>
 <body>
 
-  <div class="card">
-    <div class="card-header">
-      <!-- UBAH SRC LOGO DI BAWAH INI -->
-      <img src="lg-infinity.png" alt="Logo">
-      <h1>ABSENSI INFINITY</h1>
-    </div>
+  <div class="dashboard-container">
     
-    <div class="card-body">
-      <div class="guide-box">
-        <h3>Panduan Pemindaian QR</h3>
-        <ol>
-          <li>Berikan izin akses kamera saat diminta oleh browser.</li>
-          <li>Pilih kamera yang ingin digunakan, lalu klik <strong>Start Scanning</strong>.</li>
-          <li>Arahkan ID/QR Code tepat ke dalam area kotak pemindai.</li>
-          <li>Tunggu hingga muncul konfirmasi hijau di bagian bawah.</li>
-        </ol>
+    <!-- KOLOM KIRI: SCANNER -->
+    <div class="panel">
+      <div class="panel-header">
+        <img src="lg-infinity.png" alt="Logo"> Pindai QR Code
       </div>
-
-      <div id="reader"></div>
-      <div id="status">Menunggu inisialisasi kamera...</div>
+      <div class="panel-body">
+        <div id="reader"></div>
+        <p style="text-align: center; font-size: 0.85rem; color: #666; margin-top: 15px;">Arahkan QR Code peserta ke kamera.</p>
+      </div>
     </div>
-  </div>
 
-  <div class="footer">
-    &copy; 2026 INFINITY Organization
+    <!-- KOLOM KANAN: FORM & AKSI -->
+    <div class="panel">
+      <div class="panel-header" style="background-color: #333;">
+        Verifikasi & Submit
+      </div>
+      <div class="panel-body">
+        
+        <!-- Saat belum ada yang discan -->
+        <div class="idle-state" id="idle-state">
+          <svg style="width:50px; opacity:0.5; margin-bottom:10px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+          <p>Menunggu hasil pindaian kamera...</p>
+        </div>
+
+        <!-- Saat QR berhasil discan (Form Review) -->
+        <div class="form-review" id="form-review">
+          <h3>Konfirmasi Data Peserta</h3>
+          <div class="scanned-info" id="display-nama">-</div>
+          <div class="scanned-nim" id="display-nim">-</div>
+          
+          <div class="input-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="input-ticket"> Membawa Entry Ticket
+            </label>
+          </div>
+          
+          <div class="input-group">
+            <textarea id="input-note" class="text-input" rows="2" placeholder="Catatan Khusus (Opsional)..."></textarea>
+          </div>
+          
+          <div class="btn-group">
+            <button class="btn btn-cancel" onclick="batalkanScan()">Batal</button>
+            <button class="btn btn-submit" id="btn-kirim" onclick="submitData()">Kirim Data</button>
+          </div>
+        </div>
+
+        <!-- Riwayat Submit Terakhir -->
+        <div class="history-box">
+          <div class="history-title">Riwayat Terakhir:</div>
+          <div class="history-item" id="history-content">
+            Belum ada data yang dikirim sesi ini.
+          </div>
+        </div>
+
+      </div>
+    </div>
+
   </div>
 
   <script>
-    // ⚠️ MASUKKAN URL GOOGLE APPS SCRIPT ANDA DI SINI:
+    // ⚠️ MASUKKAN URL APPS SCRIPT ANDA DI SINI
     const urlGoogleScript = "https://script.google.com/macros/s/AKfycbyL1RtuBShto37PYmd17FTBaZ3gF3o15G7FDoafA8vf0rTtsYJcjnygBhe2nT0tqK3k/exec";
 
     let isProcessing = false;
-    const statusDiv = document.getElementById('status');
+    let qrDataSementara = ""; 
+    let namaSementara = "";
 
+    const formReview = document.getElementById('form-review');
+    const idleState = document.getElementById('idle-state');
+    const readerDiv = document.getElementById('reader');
+    const historyContent = document.getElementById('history-content');
+
+    // 1. Fungsi saat QR Terdeteksi
     function onScanSuccess(decodedText, decodedResult) {
       if (isProcessing) return;
-      isProcessing = true;
+      isProcessing = true; // Mengunci scanner agar tidak menimpa data
       
-      // UI Loading
-      statusDiv.style.backgroundColor = "#fff3cd";
-      statusDiv.style.color = "#856404";
-      statusDiv.style.borderColor = "#ffeeba";
-      statusDiv.innerHTML = "Memproses data...";
+      qrDataSementara = decodedText;
+      let dataPecah = decodedText.split('+');
+      namaSementara = dataPecah[1] || "Peserta";
+      let nimSementara = dataPecah[0] || "Tidak diketahui";
 
-      // Mengirim data ke Google Sheet
-      fetch(urlGoogleScript + "?data=" + encodeURIComponent(decodedText))
+      // Tampilkan form konfirmasi
+      document.getElementById('display-nama').innerText = namaSementara;
+      document.getElementById('display-nim').innerText = "NIM: " + nimSementara;
+      
+      // Kosongkan form
+      document.getElementById('input-ticket').checked = false;
+      document.getElementById('input-note').value = "";
+
+      // Ganti Tampilan UI
+      idleState.style.display = 'none';
+      formReview.style.display = 'block';
+      readerDiv.classList.add('blur-scanner'); // Memburamkan kamera saat konfirmasi
+    }
+
+    // 2. Fungsi Tombol Batal
+    function batalkanScan() {
+      formReview.style.display = 'none';
+      idleState.style.display = 'block';
+      readerDiv.classList.remove('blur-scanner');
+      isProcessing = false; // Membuka kunci scanner
+    }
+
+    // 3. Fungsi Tombol Kirim Data
+    function submitData() {
+      const btnKirim = document.getElementById('btn-kirim');
+      btnKirim.innerText = "Mengirim...";
+      btnKirim.disabled = true;
+
+      const isTicket = document.getElementById('input-ticket').checked;
+      const noteVal = document.getElementById('input-note').value;
+
+      // Menyusun URL beserta Entry Ticket & Note
+      const finalUrl = urlGoogleScript 
+        + "?data=" + encodeURIComponent(qrDataSementara) 
+        + "&ticket=" + isTicket 
+        + "&note=" + encodeURIComponent(noteVal);
+
+      fetch(finalUrl)
         .then(response => response.text())
         .then(hasil => {
-          // UI Sukses
-          statusDiv.style.backgroundColor = "#d4edda";
-          statusDiv.style.color = "#155724";
-          statusDiv.style.borderColor = "#c3e6cb";
-          statusDiv.innerHTML = "✓ " + hasil;
-          
-          // Reset 
-          setTimeout(() => { 
-            isProcessing = false; 
-            statusDiv.style.backgroundColor = "#f8f9fa";
-            statusDiv.style.color = "#666666";
-            statusDiv.style.borderColor = "#e0e0e0";
-            statusDiv.innerText = "Siap memindai peserta berikutnya.";
-          }, 3000);
+          // Menulis Riwayat di UI
+          let waktuKirim = new Date().toLocaleTimeString('id-ID', { hour12: false });
+          historyContent.innerHTML = `<span class="history-time">${waktuKirim}</span> ${hasil}`;
+
+          // Reset UI
+          btnKirim.innerText = "Kirim Data";
+          btnKirim.disabled = false;
+          batalkanScan(); // Kembali ke tampilan idle
         })
         .catch(error => {
-          // UI Gagal
-          statusDiv.style.backgroundColor = "#f8d7da";
-          statusDiv.style.color = "#721c24";
-          statusDiv.style.borderColor = "#f5c6cb";
-          statusDiv.innerHTML = "⚠ Koneksi terputus. Silakan coba lagi.";
-          setTimeout(() => { isProcessing = false; }, 2000);
+          alert("Gagal mengirim data. Cek koneksi internet Anda.");
+          btnKirim.innerText = "Kirim Data";
+          btnKirim.disabled = false;
         });
     }
 
-    var html5QrcodeScanner = new Html5QrcodeScanner(
-      "reader", { fps: 10, qrbox: { width: 250, height: 250 } }, false
-    );
+    // Render Kamera
+    var html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: { width: 250, height: 250 } }, false);
     html5QrcodeScanner.render(onScanSuccess);
   </script>
 </body>
