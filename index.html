@@ -9,30 +9,24 @@
   
   <style>
     :root {
-      --primary-color: #f2791d;
-      --primary-hover: #d96a17;
-      --bg-white: #ffffff;
-      --border-color: #e0e0e0;
-      --text-dark: #333333;
+      --primary-color: #f2791d; --primary-hover: #d96a17;
+      --blue-color: #0288d1; --blue-hover: #0277bd;
+      --bg-white: #ffffff; --border-color: #e0e0e0; --text-dark: #333333;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
     
     body { 
-      /* GANTI LINK BACKGROUND DI BAWAH INI */
       background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('bg-infinity.jpg') no-repeat center fixed; 
       background-size: cover; color: var(--text-dark);
-      display: flex; align-items: center; justify-content: center;
-      min-height: 100vh; padding: 20px;
+      display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px;
     }
 
     .dashboard-container { display: flex; flex-wrap: wrap; gap: 20px; max-width: 1000px; width: 100%; align-items: flex-start;}
     .panel { background: var(--bg-white); border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.3); flex: 1; min-width: 320px; overflow: hidden; display: flex; flex-direction: column; }
-    
     .panel-header { background-color: var(--primary-color); color: white; padding: 15px 20px; font-weight: 600; font-size: 1.1rem; display: flex; align-items: center; gap: 10px; }
     .panel-header img { height: 28px; }
     .panel-body { padding: 20px; display: flex; flex-direction: column;}
 
-    /* Scanner & Guide */
     #reader { width: 100%; border-radius: 6px; overflow: hidden; border: 1px solid var(--border-color); }
     #reader button { background: var(--primary-color) !important; color: white !important; border: none !important; padding: 8px 12px !important; border-radius: 4px !important; cursor: pointer; }
     
@@ -41,11 +35,14 @@
     .guide-mini ol { margin-left: 15px; margin-top: 8px; margin-bottom: 12px; line-height: 1.5; }
     .alert-mini { color: #842029; background: #f8d7da; padding: 8px; border-radius: 4px; font-weight: 600; text-align: center; font-size: 0.8rem;}
 
-    /* Form Konfirmasi */
     .form-review { display: none; background: #fdfdfd; border: 2px dashed var(--primary-color); border-radius: 6px; padding: 15px; margin-bottom: 20px; }
     .form-review h3 { color: var(--primary-color); margin-bottom: 10px; font-size: 1.1rem;}
     .scanned-info { font-size: 1.2rem; font-weight: 700; margin-bottom: 5px; color: #111;}
     .scanned-nim { font-size: 0.9rem; color: #666; margin-bottom: 15px;}
+    
+    /* Box Info Kepulangan (UI Baru) */
+    .pulang-info-box { display: none; background: #e1f5fe; border-left: 4px solid var(--blue-color); padding: 12px; border-radius: 4px; margin-bottom: 15px; font-size: 0.85rem; }
+    .pulang-info-box strong { color: var(--blue-color); }
     
     .input-group { margin-bottom: 15px; }
     .checkbox-label { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 0.95rem; cursor: pointer; background: #f0f0f0; padding: 12px; border-radius: 6px; }
@@ -57,16 +54,22 @@
     .btn-submit { background-color: #198754; } .btn-submit:hover { background-color: #157347; }
     .btn-cancel { background-color: #dc3545; } .btn-cancel:hover { background-color: #bb2d3b; }
 
-    /* Riwayat Scrollable */
     .idle-state { text-align: center; color: #888; margin: 30px 0; }
+    .loading-state { display: none; text-align: center; color: var(--primary-color); margin: 30px 0; font-weight: 600;}
+
+    /* Riwayat & Tombol Hapus */
     .history-box { border-top: 1px solid #eee; padding-top: 15px; }
-    .history-title { font-size: 0.85rem; font-weight: 600; color: #666; margin-bottom: 8px;}
+    .history-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;}
+    .history-title { font-size: 0.85rem; font-weight: 600; color: #666; }
+    .btn-clear-history { background: none; border: none; color: #dc3545; font-size: 0.8rem; cursor: pointer; font-weight: 600; padding: 4px 8px; border-radius: 4px;}
+    .btn-clear-history:hover { background: #ffebee; }
     
     .history-content { max-height: 200px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 5px; }
     .history-content::-webkit-scrollbar { width: 5px; }
     .history-content::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
     .history-item { background: #eef; padding: 10px; border-radius: 6px; border-left: 4px solid var(--primary-color); font-size: 0.85rem; }
-    .history-time { font-weight: bold; color: var(--primary-color); margin-right: 5px;}
+    .history-item.pulang { background: #e3f2fd; border-left-color: var(--blue-color); }
+    .history-time { font-weight: bold; margin-right: 5px;}
     .history-empty { text-align: center; color: #999; font-size: 0.85rem; font-style: italic; margin-top: 10px; }
 
     .blur-scanner { filter: blur(4px) grayscale(50%); pointer-events: none; }
@@ -76,10 +79,9 @@
 
   <div class="dashboard-container">
     
-    <!-- KOLOM KIRI: SCANNER & PANDUAN -->
+    <!-- KOLOM KIRI: SCANNER -->
     <div class="panel">
       <div class="panel-header">
-        <!-- GANTI LINK LOGO DI BAWAH INI -->
         <img src="lg-infinity.png" alt="Logo"> Pindai QR Code
       </div>
       <div class="panel-body">
@@ -88,11 +90,11 @@
         <div class="guide-mini">
           <strong>📖 Panduan Pengurus:</strong>
           <ol>
-            <li>Arahkan QR ke area pindai.</li>
-            <li>Centang <i>Entry Ticket</i> jika peserta membawa bukti.</li>
-            <li>Isi catatan jika ada kondisi khusus sebelum menekan <i>Kirim Data</i>.</li>
+            <li>Arahkan QR ke area pindai. Tunggu sistem memeriksa data (1-2 detik).</li>
+            <li>Centang <i>Entry Ticket</i> khusus untuk pendaftaran awal.</li>
+            <li>Jika peserta sudah pernah registrasi awal, sistem akan otomatis merubah warna jadi Biru (Mode Pulang).</li>
           </ol>
-          <div class="alert-mini">⚠️ Bila terjadi kesalahan teknis (lag/error), segera beralih catat manual langsung di Google Sheet SPS!</div>
+          <div class="alert-mini">⚠️ Bila terjadi kesalahan teknis (lag/error), segera beralih catat manual di Google Sheet SPS!</div>
         </div>
       </div>
     </div>
@@ -102,22 +104,35 @@
       <div class="panel-header" style="background-color: #333;">Verifikasi & Riwayat</div>
       <div class="panel-body">
         
-        <!-- Saat Belum Scan -->
+        <!-- Idle -->
         <div class="idle-state" id="idle-state">
           <p>Menunggu hasil pindaian kamera...</p>
         </div>
 
+        <!-- Loading -->
+        <div class="loading-state" id="loading-state">
+          <p>⏳ Memeriksa status data di SPS...</p>
+        </div>
+
         <!-- Form Konfirmasi -->
         <div class="form-review" id="form-review">
-          <h3>Konfirmasi Data Peserta</h3>
+          <h3 id="form-title">Konfirmasi Kedatangan</h3>
           <div class="scanned-info" id="display-nama">-</div>
           <div class="scanned-nim" id="display-nim">-</div>
           
-          <div class="input-group">
+          <!-- Box Tambahan Khusus Pulang -->
+          <div class="pulang-info-box" id="box-pulang-info">
+            <strong>Waktu Kedatangan:</strong> <span id="display-waktuD"></span><br>
+            <strong>Catatan Awal:</strong> <span id="display-noteD"></span>
+          </div>
+          
+          <!-- Opsi Ticket Khusus Datang -->
+          <div class="input-group" id="group-ticket">
             <label class="checkbox-label">
               <input type="checkbox" id="input-ticket"> Membawa Entry Ticket
             </label>
           </div>
+
           <div class="input-group">
             <textarea id="input-note" class="text-input" rows="2" placeholder="Catatan Khusus SPS (Opsional)..."></textarea>
           </div>
@@ -128,12 +143,13 @@
           </div>
         </div>
 
-        <!-- Riwayat (Menetap & Scrollable) -->
+        <!-- Riwayat (Menetap, Scrollable & Opsi Hapus) -->
         <div class="history-box">
-          <div class="history-title">Riwayat Sesi Perangkat Ini:</div>
-          <div class="history-content" id="history-container">
-             <!-- Daftar history akan dimuat JavaScript disini -->
+          <div class="history-header">
+             <div class="history-title">Riwayat Sesi Perangkat Ini:</div>
+             <button class="btn-clear-history" onclick="clearHistory()">🗑️ Hapus</button>
           </div>
+          <div class="history-content" id="history-container"></div>
         </div>
 
       </div>
@@ -151,6 +167,7 @@
 
     const formReview = document.getElementById('form-review');
     const idleState = document.getElementById('idle-state');
+    const loadingState = document.getElementById('loading-state');
     const readerDiv = document.getElementById('reader');
     const historyContainer = document.getElementById('history-container');
 
@@ -162,19 +179,29 @@
         historyContainer.innerHTML = "<div class='history-empty'>Belum ada riwayat.</div>";
         return;
       }
-      historyContainer.innerHTML = historyList.map(h => 
-        `<div class="history-item"><span class="history-time">[${h.time}]</span> ${h.text}</div>`
-      ).join('');
+      historyContainer.innerHTML = historyList.map(h => {
+        let isPulang = h.text.includes("Pulang");
+        let cls = isPulang ? "history-item pulang" : "history-item";
+        let color = isPulang ? "var(--blue-color)" : "var(--primary-color)";
+        return `<div class="${cls}"><span class="history-time" style="color:${color}">[${h.time}]</span> ${h.text}</div>`;
+      }).join('');
     }
 
     function addHistory(text) {
       let now = new Date().toLocaleTimeString('id-ID', { hour12: false });
-      historyList.unshift({ time: now, text: text }); // Memasukkan ke urutan paling atas
+      historyList.unshift({ time: now, text: text }); 
       localStorage.setItem('absensiHistory', JSON.stringify(historyList));
       renderHistory();
     }
 
-    // Tampilkan history saat web pertama kali dibuka
+    function clearHistory() {
+      if(confirm("Yakin ingin menghapus semua riwayat di perangkat ini? (Data di Google Sheet tidak akan terhapus)")){
+        localStorage.removeItem('absensiHistory');
+        historyList = [];
+        renderHistory();
+      }
+    }
+
     renderHistory();
 
     // FUNGSI SCANNER
@@ -185,47 +212,112 @@
       qrDataSementara = decodedText;
       let dataPecah = decodedText.split('+');
       namaSementara = dataPecah[1] || "Peserta";
+      let nimSementara = dataPecah[0] || "-";
       
-      document.getElementById('display-nama').innerText = namaSementara;
-      document.getElementById('display-nim').innerText = "NIM: " + (dataPecah[0] || "-");
+      // UI Transisi (Loading Cek Server)
+      idleState.style.display = 'none';
+      formReview.style.display = 'none';
+      loadingState.style.display = 'block';
+      readerDiv.classList.add('blur-scanner'); 
+
+      // 1. Cek Status Peserta
+      const checkUrl = urlGoogleScript + "?action=check&data=" + encodeURIComponent(decodedText);
+      fetch(checkUrl)
+        .then(r => r.text())
+        .then(res => {
+           loadingState.style.display = 'none';
+           
+           if (res.startsWith("STATUS:DATANG")) {
+               setupUI_Datang(namaSementara, nimSementara);
+           } else if (res.startsWith("STATUS:PULANG")) {
+               let parts = res.split('|');
+               setupUI_Pulang(namaSementara, nimSementara, parts[1], parts[2]);
+           } else if (res.startsWith("STATUS:SUDAH_PULANG")) {
+               alert("⚠️ Peserta " + namaSementara + " sudah menyelesaikan absen pulang!");
+               batalkanScan();
+           } else {
+               alert(res); batalkanScan();
+           }
+        }).catch(err => {
+           alert("Gagal terhubung ke SPS. Periksa internet Anda.");
+           batalkanScan();
+        });
+    }
+
+    // PENGATUR UI KEDATANGAN
+    function setupUI_Datang(nama, nim) {
+      document.getElementById('form-title').innerText = "Konfirmasi Kedatangan";
+      document.getElementById('form-title').style.color = "var(--primary-color)";
+      document.getElementById('display-nama').innerText = nama;
+      document.getElementById('display-nim').innerText = "NIM: " + nim;
+      
+      document.getElementById('box-pulang-info').style.display = 'none';
+      document.getElementById('group-ticket').style.display = 'block'; // Tampilkan Tiket
+      
+      formReview.style.borderStyle = "dashed";
+      formReview.style.borderColor = "var(--primary-color)";
+      
       document.getElementById('input-ticket').checked = false;
       document.getElementById('input-note').value = "";
-
-      idleState.style.display = 'none';
+      document.getElementById('input-note').placeholder = "Catatan Datang SPS (Opsional)...";
+      
       formReview.style.display = 'block';
-      readerDiv.classList.add('blur-scanner'); 
+    }
+
+    // PENGATUR UI KEPULANGAN
+    function setupUI_Pulang(nama, nim, waktuD, noteD) {
+      document.getElementById('form-title').innerText = "Konfirmasi Kepulangan";
+      document.getElementById('form-title').style.color = "var(--blue-color)";
+      document.getElementById('display-nama').innerText = nama;
+      document.getElementById('display-nim').innerText = "NIM: " + nim;
+      
+      document.getElementById('box-pulang-info').style.display = 'block';
+      document.getElementById('display-waktuD').innerText = waktuD || "-";
+      document.getElementById('display-noteD').innerText = noteD || "-";
+      
+      document.getElementById('group-ticket').style.display = 'none'; // Sembunyikan Tiket
+      
+      formReview.style.borderStyle = "solid";
+      formReview.style.borderColor = "var(--blue-color)";
+      
+      document.getElementById('input-note').value = "";
+      document.getElementById('input-note').placeholder = "Catatan Pulang (Opsional, akan otomatis digabung)...";
+      
+      formReview.style.display = 'block';
     }
 
     function batalkanScan() {
       formReview.style.display = 'none';
+      loadingState.style.display = 'none';
       idleState.style.display = 'block';
       readerDiv.classList.remove('blur-scanner');
       isProcessing = false; 
     }
 
+    // 2. Eksekusi Pengiriman
     function submitData() {
       const btnKirim = document.getElementById('btn-kirim');
-      btnKirim.innerText = "Mengirim...";
+      btnKirim.innerText = "Memproses...";
       btnKirim.disabled = true;
 
       const isTicket = document.getElementById('input-ticket').checked;
       const noteVal = document.getElementById('input-note').value;
 
-      const finalUrl = urlGoogleScript 
-        + "?data=" + encodeURIComponent(qrDataSementara) 
+      const submitUrl = urlGoogleScript 
+        + "?action=submit&data=" + encodeURIComponent(qrDataSementara) 
         + "&ticket=" + isTicket 
         + "&note=" + encodeURIComponent(noteVal);
 
-      fetch(finalUrl)
+      fetch(submitUrl)
         .then(response => response.text())
         .then(hasil => {
-          addHistory(hasil); // Tambahkan ke daftar riwayat lokal
+          addHistory(hasil); 
           btnKirim.innerText = "Kirim Data";
           btnKirim.disabled = false;
           batalkanScan(); 
         })
         .catch(error => {
-          alert("Gagal mengirim data. Cek koneksi internet Anda.");
+          alert("Gagal mengirim data.");
           btnKirim.innerText = "Kirim Data";
           btnKirim.disabled = false;
         });
