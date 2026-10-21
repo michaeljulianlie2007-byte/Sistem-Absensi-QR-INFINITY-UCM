@@ -16,6 +16,7 @@
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
     
     body { 
+      /* MASUKKAN LINK BACKGROUND DI BAWAH INI */
       background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('bg-infinity.jpg') no-repeat center fixed; 
       background-size: cover; color: var(--text-dark);
       display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px;
@@ -32,7 +33,7 @@
     .btn-sync:disabled { background-color: #666; cursor: not-allowed; }
 
     #reader { width: 100%; border-radius: 6px; overflow: hidden; border: 1px solid var(--border-color); }
-    #reader button { background: var(--primary-color) !important; color: white !important; border: none !important; padding: 8px 12px !important; border-radius: 4px !important; cursor: pointer; }
+    #reader button { background: var(--primary-color) !important; color: white !important; border: none !important; padding: 8px 12px !important; border-radius: 4px !important; cursor: pointer; font-family: 'Inter', sans-serif;}
     
     .guide-mini { background: #f8f9fa; border: 1px solid var(--border-color); border-radius: 6px; padding: 12px; margin-top: 15px; font-size: 0.85rem; color: #555; }
     .guide-mini strong { color: var(--primary-color); }
@@ -50,7 +51,7 @@
     .input-group { margin-bottom: 15px; }
     .checkbox-label { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 0.95rem; cursor: pointer; background: #f0f0f0; padding: 12px; border-radius: 6px; }
     .checkbox-label input { width: 20px; height: 20px; accent-color: var(--primary-color); }
-    .text-input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 0.9rem; resize: vertical; }
+    .text-input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 0.9rem; resize: vertical; font-family: 'Inter', sans-serif;}
 
     .btn-group { display: flex; gap: 10px; }
     .btn { flex: 1; padding: 12px; border: none; border-radius: 6px; font-weight: 600; font-size: 0.95rem; cursor: pointer; color: white; transition: 0.2s;}
@@ -70,6 +71,7 @@
     .history-content::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
     .history-item { background: #eef; padding: 10px; border-radius: 6px; border-left: 4px solid var(--primary-color); font-size: 0.85rem; }
     .history-item.pulang { background: #e3f2fd; border-left-color: var(--blue-color); }
+    .history-item.error { background: #f8d7da; border-left-color: #dc3545; }
     .history-time { font-weight: bold; margin-right: 5px;}
     .history-empty { text-align: center; color: #999; font-size: 0.85rem; font-style: italic; margin-top: 10px; }
 
@@ -83,6 +85,7 @@
     <!-- KOLOM KIRI: SCANNER -->
     <div class="panel">
       <div class="panel-header">
+        <!-- MASUKKAN LINK LOGO DI BAWAH INI -->
         <img src="lg-infinity.png" alt="Logo"> Pindai QR Code
       </div>
       <div class="panel-body">
@@ -96,11 +99,11 @@
         <div class="guide-mini">
           <strong>📖 Panduan Pengurus:</strong>
           <ol>
-            <li><strong>Wajib Sinkronisasi</strong> sebelum mulai sesi.</li>
-            <li>Arahkan QR ke area pindai.</li>
-            <li>Klik Kirim. Layar akan otomatis kembali ke kamera seketika!</li>
+            <li><strong>Wajib Sinkronisasi</strong> sebelum mulai sesi Datang/Pulang.</li>
+            <li>Arahkan QR ke area pindai. Form verifikasi akan langsung muncul.</li>
+            <li>Saat klik Kirim, layar seketika kembali ke kamera. Anda bisa langsung scan peserta selanjutnya!</li>
           </ol>
-          <div class="alert-mini">⚠️ Bila terjadi kesalahan teknis (lag/error), segera beralih catat manual di Google Sheet SPS!</div>
+          <div class="alert-mini">⚠️ Bila terjadi error, segera beralih catat manual di Google Sheet!</div>
         </div>
       </div>
     </div>
@@ -168,6 +171,7 @@
     const readerDiv = document.getElementById('reader');
     const historyContainer = document.getElementById('history-container');
 
+    // MENGELOLA DATABASE LOKAL
     let localDB = JSON.parse(localStorage.getItem('dbInfinity')) || {};
     let historyList = JSON.parse(localStorage.getItem('absensiHistory')) || [];
 
@@ -182,7 +186,7 @@
         .then(data => {
            localDB = data;
            localStorage.setItem('dbInfinity', JSON.stringify(data));
-           alert("✅ Berhasil! Data SPS telah tersinkronisasi.");
+           alert("✅ Berhasil! " + Object.keys(data).length + " baris data telah disinkronisasi ke perangkat ini.");
            btn.innerText = "✅ Data SPS Ter-update";
            setTimeout(() => { btn.innerText = "🔄 Sinkronisasi Data SPS (Klik Sebelum Mulai)"; btn.disabled = false; }, 3000);
         })
@@ -200,8 +204,9 @@
       }
       historyContainer.innerHTML = historyList.map(h => {
         let isPulang = h.text.includes("Pulang");
-        let cls = isPulang ? "history-item pulang" : "history-item";
-        let color = isPulang ? "var(--blue-color)" : "var(--primary-color)";
+        let isError = h.text.includes("❌");
+        let cls = isError ? "history-item error" : (isPulang ? "history-item pulang" : "history-item");
+        let color = isError ? "#dc3545" : (isPulang ? "var(--blue-color)" : "var(--primary-color)");
         return `<div class="${cls}"><span class="history-time" style="color:${color}">[${h.time}]</span> ${h.text}</div>`;
       }).join('');
     }
@@ -225,10 +230,16 @@
     // FUNGSI SCANNER
     function onScanSuccess(decodedText, decodedResult) {
       if (isProcessing) return;
-      isProcessing = true; 
       
-      qrDataSementara = decodedText;
+      // 1. FILTER VALIDASI (Tolak QR Abal-abal)
       let dataPecah = decodedText.split('+');
+      if (dataPecah.length < 3) {
+          alert("❌ QR Code Ditolak. Ini bukan format ID peserta INFINITY.");
+          return;
+      }
+
+      isProcessing = true; 
+      qrDataSementara = decodedText;
       namaSementara = dataPecah[1] || "Peserta";
       nimSementara = dataPecah[0] || "-";
       
@@ -236,6 +247,7 @@
       formReview.style.display = 'none';
       readerDiv.classList.add('blur-scanner'); 
 
+      // 2. CEK INSTAN LOKAL
       let person = localDB[nimSementara.trim()];
 
       if (!person || person.rgsD !== true) {
@@ -243,7 +255,7 @@
       } else if (person.rgsP !== true) {
           setupUI_Pulang(namaSementara, nimSementara, person.waktuD, person.note);
       } else {
-          alert("⚠️ Peserta " + namaSementara + " sudah absen pulang!");
+          alert("⚠️ Peserta " + namaSementara + " sudah menyelesaikan absen pulang!");
           batalkanScan();
       }
     }
@@ -283,7 +295,7 @@
       formReview.style.borderColor = "var(--blue-color)";
       
       document.getElementById('input-note').value = "";
-      document.getElementById('input-note').placeholder = "Catatan Pulang (Opsional)...";
+      document.getElementById('input-note').placeholder = "Catatan Pulang (Opsional, akan otomatis digabung)...";
       
       formReview.style.display = 'block';
     }
@@ -295,9 +307,9 @@
       isProcessing = false; 
     }
 
-    // FUNGSI SUBMIT (FIRE-AND-FORGET / INSTANT)
+    // FUNGSI SUBMIT (Optimistic UI / Fire-and-Forget)
     function submitData() {
-      if (isSubmitting) return; // Kunci Mutlak Anti Dobel Klik
+      if (isSubmitting) return; 
       isSubmitting = true;
 
       const isTicket = document.getElementById('input-ticket').checked;
@@ -310,30 +322,38 @@
         + "&ticket=" + isTicket 
         + "&note=" + encodeURIComponent(noteVal);
 
-      // 1. Eksekusi Background Tanpa Ditunggu!
-      fetch(submitUrl).catch(error => {
-          alert("⚠️ Gagal mengirim data " + nama + "! Cek internet Anda.");
-      });
-
-      // 2. Pembaruan LOKAL SECARA INSTAN
-      let statusTeks = "";
-      if (!localDB[nimKey]) {
-         localDB[nimKey] = { rgsD: true, waktuD: "Baru saja", rgsP: false, note: noteVal };
-         statusTeks = "✅ Datang: " + nama;
-      } else if (!localDB[nimKey].rgsD) {
-         localDB[nimKey].rgsD = true;
-         localDB[nimKey].note = noteVal;
-         statusTeks = "✅ Datang: " + nama;
-      } else {
-         localDB[nimKey].rgsP = true;
-         statusTeks = "👋 Pulang: " + nama;
-      }
-      localStorage.setItem('dbInfinity', JSON.stringify(localDB));
-      addHistory(statusTeks);
-
-      // 3. Reset form seketika (Kembali jadi Scanner dalam 0.1 detik)
-      isSubmitting = false;
+      // 1. TUTUP FORM SEKETIKA (Lanjut Scan Orang Lain)
       batalkanScan(); 
+
+      // 2. PROSES PENGIRIMAN LATAR BELAKANG
+      fetch(submitUrl)
+        .then(response => response.text())
+        .then(hasil => {
+          // Hanya update memori HP jika Server Google bilang berhasil
+          let isServerPulang = hasil.includes("👋 Pulang");
+          let isServerDatang = hasil.includes("✅ Datang");
+          
+          if (!localDB[nimKey]) {
+             localDB[nimKey] = { rgsD: true, waktuD: "Baru saja", rgsP: false, note: noteVal };
+          } 
+          
+          if (isServerPulang) {
+             localDB[nimKey].rgsP = true;
+             localDB[nimKey].rgsD = true; 
+          } else if (isServerDatang) {
+             localDB[nimKey].rgsD = true;
+             localDB[nimKey].note = noteVal;
+          }
+
+          localStorage.setItem('dbInfinity', JSON.stringify(localDB));
+          addHistory(hasil);
+          isSubmitting = false; 
+        })
+        .catch(error => {
+          // Jika internet putus, LocalDB aman (tidak korup) dan panitia diinfokan
+          addHistory("❌ GAGAL MENGIRIM: " + nama + " (Cek Internet Anda!)");
+          isSubmitting = false;
+        });
     }
 
     var html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: { width: 250, height: 250 } }, false);
