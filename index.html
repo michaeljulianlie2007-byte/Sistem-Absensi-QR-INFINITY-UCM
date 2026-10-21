@@ -18,73 +18,56 @@
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
     
     body { 
+      /* GANTI LINK BACKGROUND DI BAWAH INI */
       background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('bg-infinity.jpg') no-repeat center fixed; 
-      background-size: cover; 
-      color: var(--text-dark);
+      background-size: cover; color: var(--text-dark);
       display: flex; align-items: center; justify-content: center;
       min-height: 100vh; padding: 20px;
     }
 
-    /* Container Split Layout */
-    .dashboard-container {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 20px;
-      max-width: 1000px;
-      width: 100%;
-    }
-
-    .panel {
-      background: var(--bg-white);
-      border-radius: 8px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
-      flex: 1;
-      min-width: 320px;
-      overflow: hidden;
-      display: flex; flex-direction: column;
-    }
-
-    .panel-header {
-      background-color: var(--primary-color);
-      color: white; padding: 15px 20px;
-      font-weight: 600; font-size: 1.1rem;
-      display: flex; align-items: center; gap: 10px;
-    }
+    .dashboard-container { display: flex; flex-wrap: wrap; gap: 20px; max-width: 1000px; width: 100%; align-items: flex-start;}
+    .panel { background: var(--bg-white); border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.3); flex: 1; min-width: 320px; overflow: hidden; display: flex; flex-direction: column; }
+    
+    .panel-header { background-color: var(--primary-color); color: white; padding: 15px 20px; font-weight: 600; font-size: 1.1rem; display: flex; align-items: center; gap: 10px; }
     .panel-header img { height: 28px; }
+    .panel-body { padding: 20px; display: flex; flex-direction: column;}
 
-    .panel-body { padding: 20px; flex-grow: 1; display: flex; flex-direction: column;}
-
-    /* Styling Scanner */
+    /* Scanner & Guide */
     #reader { width: 100%; border-radius: 6px; overflow: hidden; border: 1px solid var(--border-color); }
     #reader button { background: var(--primary-color) !important; color: white !important; border: none !important; padding: 8px 12px !important; border-radius: 4px !important; cursor: pointer; }
+    
+    .guide-mini { background: #f8f9fa; border: 1px solid var(--border-color); border-radius: 6px; padding: 12px; margin-top: 15px; font-size: 0.85rem; color: #555; }
+    .guide-mini strong { color: var(--primary-color); }
+    .guide-mini ol { margin-left: 15px; margin-top: 8px; margin-bottom: 12px; line-height: 1.5; }
+    .alert-mini { color: #842029; background: #f8d7da; padding: 8px; border-radius: 4px; font-weight: 600; text-align: center; font-size: 0.8rem;}
 
-    /* Area Form Review */
+    /* Form Konfirmasi */
     .form-review { display: none; background: #fdfdfd; border: 2px dashed var(--primary-color); border-radius: 6px; padding: 15px; margin-bottom: 20px; }
     .form-review h3 { color: var(--primary-color); margin-bottom: 10px; font-size: 1.1rem;}
     .scanned-info { font-size: 1.2rem; font-weight: 700; margin-bottom: 5px; color: #111;}
     .scanned-nim { font-size: 0.9rem; color: #666; margin-bottom: 15px;}
     
-    /* Input Form */
     .input-group { margin-bottom: 15px; }
-    .checkbox-label { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 1rem; cursor: pointer; background: #f0f0f0; padding: 12px; border-radius: 6px; }
+    .checkbox-label { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 0.95rem; cursor: pointer; background: #f0f0f0; padding: 12px; border-radius: 6px; }
     .checkbox-label input { width: 20px; height: 20px; accent-color: var(--primary-color); }
-    
     .text-input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 0.9rem; resize: vertical; }
 
-    /* Tombol Aksi */
     .btn-group { display: flex; gap: 10px; }
-    .btn { flex: 1; padding: 12px; border: none; border-radius: 6px; font-weight: 600; font-size: 1rem; cursor: pointer; color: white; transition: 0.2s;}
-    .btn-submit { background-color: #198754; }
-    .btn-submit:hover { background-color: #157347; }
-    .btn-cancel { background-color: #dc3545; }
-    .btn-cancel:hover { background-color: #bb2d3b; }
+    .btn { flex: 1; padding: 12px; border: none; border-radius: 6px; font-weight: 600; font-size: 0.95rem; cursor: pointer; color: white; transition: 0.2s;}
+    .btn-submit { background-color: #198754; } .btn-submit:hover { background-color: #157347; }
+    .btn-cancel { background-color: #dc3545; } .btn-cancel:hover { background-color: #bb2d3b; }
 
-    /* Idle State & History */
-    .idle-state { text-align: center; color: #888; margin: auto 0; }
-    .history-box { margin-top: auto; border-top: 1px solid #eee; padding-top: 15px; }
+    /* Riwayat Scrollable */
+    .idle-state { text-align: center; color: #888; margin: 30px 0; }
+    .history-box { border-top: 1px solid #eee; padding-top: 15px; }
     .history-title { font-size: 0.85rem; font-weight: 600; color: #666; margin-bottom: 8px;}
-    .history-item { background: #eef; padding: 10px; border-radius: 6px; border-left: 4px solid var(--primary-color); font-size: 0.9rem; }
+    
+    .history-content { max-height: 200px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 5px; }
+    .history-content::-webkit-scrollbar { width: 5px; }
+    .history-content::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
+    .history-item { background: #eef; padding: 10px; border-radius: 6px; border-left: 4px solid var(--primary-color); font-size: 0.85rem; }
     .history-time { font-weight: bold; color: var(--primary-color); margin-right: 5px;}
+    .history-empty { text-align: center; color: #999; font-size: 0.85rem; font-style: italic; margin-top: 10px; }
 
     .blur-scanner { filter: blur(4px) grayscale(50%); pointer-events: none; }
   </style>
@@ -93,31 +76,38 @@
 
   <div class="dashboard-container">
     
-    <!-- KOLOM KIRI: SCANNER -->
+    <!-- KOLOM KIRI: SCANNER & PANDUAN -->
     <div class="panel">
       <div class="panel-header">
+        <!-- GANTI LINK LOGO DI BAWAH INI -->
         <img src="lg-infinity.png" alt="Logo"> Pindai QR Code
       </div>
       <div class="panel-body">
         <div id="reader"></div>
-        <p style="text-align: center; font-size: 0.85rem; color: #666; margin-top: 15px;">Arahkan QR Code peserta ke kamera.</p>
+        
+        <div class="guide-mini">
+          <strong>📖 Panduan Pengurus:</strong>
+          <ol>
+            <li>Arahkan QR ke area pindai.</li>
+            <li>Centang <i>Entry Ticket</i> jika peserta membawa bukti.</li>
+            <li>Isi catatan jika ada kondisi khusus sebelum menekan <i>Kirim Data</i>.</li>
+          </ol>
+          <div class="alert-mini">⚠️ Bila terjadi kesalahan teknis (lag/error), segera beralih catat manual langsung di Google Sheet SPS!</div>
+        </div>
       </div>
     </div>
 
-    <!-- KOLOM KANAN: FORM & AKSI -->
+    <!-- KOLOM KANAN: FORM & RIWAYAT -->
     <div class="panel">
-      <div class="panel-header" style="background-color: #333;">
-        Verifikasi & Submit
-      </div>
+      <div class="panel-header" style="background-color: #333;">Verifikasi & Riwayat</div>
       <div class="panel-body">
         
-        <!-- Saat belum ada yang discan -->
+        <!-- Saat Belum Scan -->
         <div class="idle-state" id="idle-state">
-          <svg style="width:50px; opacity:0.5; margin-bottom:10px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
           <p>Menunggu hasil pindaian kamera...</p>
         </div>
 
-        <!-- Saat QR berhasil discan (Form Review) -->
+        <!-- Form Konfirmasi -->
         <div class="form-review" id="form-review">
           <h3>Konfirmasi Data Peserta</h3>
           <div class="scanned-info" id="display-nama">-</div>
@@ -128,9 +118,8 @@
               <input type="checkbox" id="input-ticket"> Membawa Entry Ticket
             </label>
           </div>
-          
           <div class="input-group">
-            <textarea id="input-note" class="text-input" rows="2" placeholder="Catatan Khusus (Opsional)..."></textarea>
+            <textarea id="input-note" class="text-input" rows="2" placeholder="Catatan Khusus SPS (Opsional)..."></textarea>
           </div>
           
           <div class="btn-group">
@@ -139,11 +128,11 @@
           </div>
         </div>
 
-        <!-- Riwayat Submit Terakhir -->
+        <!-- Riwayat (Menetap & Scrollable) -->
         <div class="history-box">
-          <div class="history-title">Riwayat Terakhir:</div>
-          <div class="history-item" id="history-content">
-            Belum ada data yang dikirim sesi ini.
+          <div class="history-title">Riwayat Sesi Perangkat Ini:</div>
+          <div class="history-content" id="history-container">
+             <!-- Daftar history akan dimuat JavaScript disini -->
           </div>
         </div>
 
@@ -163,41 +152,57 @@
     const formReview = document.getElementById('form-review');
     const idleState = document.getElementById('idle-state');
     const readerDiv = document.getElementById('reader');
-    const historyContent = document.getElementById('history-content');
+    const historyContainer = document.getElementById('history-container');
 
-    // 1. Fungsi saat QR Terdeteksi
+    // MENGELOLA RIWAYAT LOKAL
+    let historyList = JSON.parse(localStorage.getItem('absensiHistory')) || [];
+
+    function renderHistory() {
+      if (historyList.length === 0) {
+        historyContainer.innerHTML = "<div class='history-empty'>Belum ada riwayat.</div>";
+        return;
+      }
+      historyContainer.innerHTML = historyList.map(h => 
+        `<div class="history-item"><span class="history-time">[${h.time}]</span> ${h.text}</div>`
+      ).join('');
+    }
+
+    function addHistory(text) {
+      let now = new Date().toLocaleTimeString('id-ID', { hour12: false });
+      historyList.unshift({ time: now, text: text }); // Memasukkan ke urutan paling atas
+      localStorage.setItem('absensiHistory', JSON.stringify(historyList));
+      renderHistory();
+    }
+
+    // Tampilkan history saat web pertama kali dibuka
+    renderHistory();
+
+    // FUNGSI SCANNER
     function onScanSuccess(decodedText, decodedResult) {
       if (isProcessing) return;
-      isProcessing = true; // Mengunci scanner agar tidak menimpa data
+      isProcessing = true; 
       
       qrDataSementara = decodedText;
       let dataPecah = decodedText.split('+');
       namaSementara = dataPecah[1] || "Peserta";
-      let nimSementara = dataPecah[0] || "Tidak diketahui";
-
-      // Tampilkan form konfirmasi
-      document.getElementById('display-nama').innerText = namaSementara;
-      document.getElementById('display-nim').innerText = "NIM: " + nimSementara;
       
-      // Kosongkan form
+      document.getElementById('display-nama').innerText = namaSementara;
+      document.getElementById('display-nim').innerText = "NIM: " + (dataPecah[0] || "-");
       document.getElementById('input-ticket').checked = false;
       document.getElementById('input-note').value = "";
 
-      // Ganti Tampilan UI
       idleState.style.display = 'none';
       formReview.style.display = 'block';
-      readerDiv.classList.add('blur-scanner'); // Memburamkan kamera saat konfirmasi
+      readerDiv.classList.add('blur-scanner'); 
     }
 
-    // 2. Fungsi Tombol Batal
     function batalkanScan() {
       formReview.style.display = 'none';
       idleState.style.display = 'block';
       readerDiv.classList.remove('blur-scanner');
-      isProcessing = false; // Membuka kunci scanner
+      isProcessing = false; 
     }
 
-    // 3. Fungsi Tombol Kirim Data
     function submitData() {
       const btnKirim = document.getElementById('btn-kirim');
       btnKirim.innerText = "Mengirim...";
@@ -206,7 +211,6 @@
       const isTicket = document.getElementById('input-ticket').checked;
       const noteVal = document.getElementById('input-note').value;
 
-      // Menyusun URL beserta Entry Ticket & Note
       const finalUrl = urlGoogleScript 
         + "?data=" + encodeURIComponent(qrDataSementara) 
         + "&ticket=" + isTicket 
@@ -215,14 +219,10 @@
       fetch(finalUrl)
         .then(response => response.text())
         .then(hasil => {
-          // Menulis Riwayat di UI
-          let waktuKirim = new Date().toLocaleTimeString('id-ID', { hour12: false });
-          historyContent.innerHTML = `<span class="history-time">${waktuKirim}</span> ${hasil}`;
-
-          // Reset UI
+          addHistory(hasil); // Tambahkan ke daftar riwayat lokal
           btnKirim.innerText = "Kirim Data";
           btnKirim.disabled = false;
-          batalkanScan(); // Kembali ke tampilan idle
+          batalkanScan(); 
         })
         .catch(error => {
           alert("Gagal mengirim data. Cek koneksi internet Anda.");
@@ -231,7 +231,6 @@
         });
     }
 
-    // Render Kamera
     var html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: { width: 250, height: 250 } }, false);
     html5QrcodeScanner.render(onScanSuccess);
   </script>
