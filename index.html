@@ -16,7 +16,6 @@
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
     
     body { 
-      /* MASUKKAN LINK BACKGROUND DI BAWAH INI */
       background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('bg-infinity.jpg') no-repeat center fixed; 
       background-size: cover; color: var(--text-dark);
       display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px;
@@ -53,6 +52,10 @@
     .checkbox-label input { width: 20px; height: 20px; accent-color: var(--primary-color); }
     .text-input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 0.9rem; resize: vertical; font-family: 'Inter', sans-serif;}
 
+    /* Style untuk dua kolom Dropdown */
+    .row-dropdown { display: flex; gap: 10px; }
+    .row-dropdown .input-group { flex: 1; }
+
     .btn-group { display: flex; gap: 10px; }
     .btn { flex: 1; padding: 12px; border: none; border-radius: 6px; font-weight: 600; font-size: 0.95rem; cursor: pointer; color: white; transition: 0.2s;}
     .btn-submit { background-color: #198754; } .btn-submit:hover { background-color: #157347; }
@@ -82,10 +85,8 @@
 
   <div class="dashboard-container">
     
-    <!-- KOLOM KIRI: SCANNER -->
     <div class="panel">
       <div class="panel-header">
-        <!-- MASUKKAN LINK LOGO DI BAWAH INI -->
         <img src="lg-infinity.png" alt="Logo"> Pindai QR Code
       </div>
       <div class="panel-body">
@@ -99,16 +100,14 @@
         <div class="guide-mini">
           <strong>📖 Panduan Pengurus:</strong>
           <ol>
-            <li><strong>Wajib Sinkronisasi</strong> sebelum mulai sesi Datang/Pulang.</li>
-            <li>Arahkan QR ke area pindai. Form verifikasi akan langsung muncul.</li>
-            <li>Saat klik Kirim, layar seketika kembali ke kamera. Anda bisa langsung scan peserta selanjutnya!</li>
+            <li><strong>Wajib Sinkronisasi</strong> sebelum mulai sesi.</li>
+            <li>Saat klik Kirim, layar akan seketika kembali ke kamera.</li>
+            <li>Bila peserta belum terdaftar, Anda akan diminta memilih Prodi dan Jurusan mereka.</li>
           </ol>
-          <div class="alert-mini">⚠️ Bila terjadi error, segera beralih catat manual di Google Sheet!</div>
         </div>
       </div>
     </div>
 
-    <!-- KOLOM KANAN: FORM & RIWAYAT -->
     <div class="panel">
       <div class="panel-header" style="background-color: #333;">Verifikasi & Riwayat</div>
       <div class="panel-body">
@@ -123,10 +122,28 @@
           <div class="scanned-nim" id="display-nim">-</div>
           
           <div class="pulang-info-box" id="box-pulang-info">
+            <strong>Jurusan/Prodi:</strong> <span id="display-jurusan-prodi"></span><br>
             <strong>Kedatangan:</strong> <span id="display-waktuD"></span><br>
             <strong>Catatan Awal:</strong> <span id="display-noteD"></span>
           </div>
           
+          <!-- KHUSUS PESERTA BARU -->
+          <div class="row-dropdown" id="box-prodi-jurusan" style="display: none;">
+            <div class="input-group">
+              <select id="input-prodi" class="text-input" onchange="updateJurusan()">
+                 <option value="">-- Pilih Prodi --</option>
+                 <option value="MAN">MAN</option>
+                 <option value="IMT">IMT</option>
+                 <option value="VCD">VCD</option>
+              </select>
+            </div>
+            <div class="input-group">
+              <select id="input-jurusan" class="text-input">
+                 <option value="">-- Pilih Jurusan --</option>
+              </select>
+            </div>
+          </div>
+
           <div class="input-group" id="group-ticket">
             <label class="checkbox-label">
               <input type="checkbox" id="input-ticket"> Membawa Entry Ticket
@@ -161,7 +178,7 @@
     const urlGoogleScript = "https://script.google.com/macros/s/AKfycbyL1RtuBShto37PYmd17FTBaZ3gF3o15G7FDoafA8vf0rTtsYJcjnygBhe2nT0tqK3k/exec";
 
     let isProcessing = false;
-    let isSubmitting = false; // Flag Anti-Dobel Klik
+    let isSubmitting = false; 
     let qrDataSementara = ""; 
     let namaSementara = "";
     let nimSementara = "";
@@ -171,9 +188,28 @@
     const readerDiv = document.getElementById('reader');
     const historyContainer = document.getElementById('history-container');
 
-    // MENGELOLA DATABASE LOKAL
     let localDB = JSON.parse(localStorage.getItem('dbInfinity')) || {};
     let historyList = JSON.parse(localStorage.getItem('absensiHistory')) || [];
+
+    // DATA JURUSAN & PRODI UC MAKASSAR
+    const jurusanMap = {
+      "MAN": ["IBM", "CBM", "DBM", "BMM", "TAX"],
+      "IMT": ["AD", "AI"],
+      "VCD": ["GD", "ILX", "DMD"]
+    };
+
+    function updateJurusan() {
+      const prodiVal = document.getElementById('input-prodi').value;
+      const jurSelect = document.getElementById('input-jurusan');
+      jurSelect.innerHTML = '<option value="">-- Pilih Jurusan --</option>';
+      if (prodiVal && jurusanMap[prodiVal]) {
+          jurusanMap[prodiVal].forEach(j => {
+              let opt = document.createElement('option');
+              opt.value = j; opt.innerText = j;
+              jurSelect.appendChild(opt);
+          });
+      }
+    }
 
     // FUNGSI SINKRONISASI 
     function syncData() {
@@ -231,7 +267,7 @@
     function onScanSuccess(decodedText, decodedResult) {
       if (isProcessing) return;
       
-      // 1. FILTER VALIDASI (Tolak QR Abal-abal)
+      // 1. FILTER VALIDASI 
       let dataPecah = decodedText.split('+');
       if (dataPecah.length < 3) {
           alert("❌ QR Code Ditolak. Ini bukan format ID peserta INFINITY.");
@@ -247,27 +283,33 @@
       formReview.style.display = 'none';
       readerDiv.classList.add('blur-scanner'); 
 
-      // 2. CEK INSTAN LOKAL
+      // 2. CEK INSTAN LOKAL MENGGUNAKAN NIM
       let person = localDB[nimSementara.trim()];
 
       if (!person || person.rgsD !== true) {
-          setupUI_Datang(namaSementara, nimSementara);
+          let isBaru = !person; // true jika orang ini tidak ada di db
+          setupUI_Datang(namaSementara, nimSementara, isBaru);
       } else if (person.rgsP !== true) {
-          setupUI_Pulang(namaSementara, nimSementara, person.waktuD, person.note);
+          setupUI_Pulang(namaSementara, nimSementara, person.waktuD, person.note, person.jurusan, person.prodi);
       } else {
           alert("⚠️ Peserta " + namaSementara + " sudah menyelesaikan absen pulang!");
           batalkanScan();
       }
     }
 
-    function setupUI_Datang(nama, nim) {
-      document.getElementById('form-title').innerText = "Konfirmasi Kedatangan";
+    function setupUI_Datang(nama, nim, isBaru) {
+      document.getElementById('form-title').innerText = isBaru ? "Konfirmasi Datang (Peserta Baru)" : "Konfirmasi Kedatangan";
       document.getElementById('form-title').style.color = "var(--primary-color)";
       document.getElementById('display-nama').innerText = nama;
       document.getElementById('display-nim').innerText = "NIM: " + nim;
       
       document.getElementById('box-pulang-info').style.display = 'none';
       document.getElementById('group-ticket').style.display = 'block'; 
+      
+      // Memunculkan Pilihan Jurusan/Prodi HANYA untuk peserta baru
+      document.getElementById('box-prodi-jurusan').style.display = isBaru ? 'flex' : 'none';
+      document.getElementById('input-prodi').value = "";
+      document.getElementById('input-jurusan').innerHTML = '<option value="">-- Pilih Jurusan --</option>';
       
       formReview.style.borderStyle = "dashed";
       formReview.style.borderColor = "var(--primary-color)";
@@ -279,17 +321,23 @@
       formReview.style.display = 'block';
     }
 
-    function setupUI_Pulang(nama, nim, waktuD, noteD) {
+    function setupUI_Pulang(nama, nim, waktuD, noteD, jurusan, prodi) {
       document.getElementById('form-title').innerText = "Konfirmasi Kepulangan";
       document.getElementById('form-title').style.color = "var(--blue-color)";
       document.getElementById('display-nama').innerText = nama;
       document.getElementById('display-nim').innerText = "NIM: " + nim;
       
       document.getElementById('box-pulang-info').style.display = 'block';
+      
+      // Memunculkan Info Jurusan Prodi
+      let infoJP = (jurusan && prodi) ? `${jurusan} (${prodi})` : "Belum ada terdata";
+      document.getElementById('display-jurusan-prodi').innerText = infoJP;
+      
       document.getElementById('display-waktuD').innerText = waktuD || "-";
       document.getElementById('display-noteD').innerText = noteD || "-";
       
       document.getElementById('group-ticket').style.display = 'none'; 
+      document.getElementById('box-prodi-jurusan').style.display = 'none';
       
       formReview.style.borderStyle = "solid";
       formReview.style.borderColor = "var(--blue-color)";
@@ -307,34 +355,34 @@
       isProcessing = false; 
     }
 
-    // FUNGSI SUBMIT (Optimistic UI / Fire-and-Forget)
     function submitData() {
       if (isSubmitting) return; 
       isSubmitting = true;
 
       const isTicket = document.getElementById('input-ticket').checked;
       const noteVal = document.getElementById('input-note').value;
+      const pProdi = document.getElementById('input-prodi').value;
+      const pJurusan = document.getElementById('input-jurusan').value;
       const nama = namaSementara;
       const nimKey = nimSementara.trim();
 
       const submitUrl = urlGoogleScript 
         + "?action=submit&data=" + encodeURIComponent(qrDataSementara) 
         + "&ticket=" + isTicket 
+        + "&prodi=" + encodeURIComponent(pProdi)
+        + "&jurusan=" + encodeURIComponent(pJurusan)
         + "&note=" + encodeURIComponent(noteVal);
 
-      // 1. TUTUP FORM SEKETIKA (Lanjut Scan Orang Lain)
       batalkanScan(); 
 
-      // 2. PROSES PENGIRIMAN LATAR BELAKANG
       fetch(submitUrl)
         .then(response => response.text())
         .then(hasil => {
-          // Hanya update memori HP jika Server Google bilang berhasil
           let isServerPulang = hasil.includes("👋 Pulang");
           let isServerDatang = hasil.includes("✅ Datang");
           
           if (!localDB[nimKey]) {
-             localDB[nimKey] = { rgsD: true, waktuD: "Baru saja", rgsP: false, note: noteVal };
+             localDB[nimKey] = { rgsD: true, waktuD: "Baru saja", rgsP: false, note: noteVal, jurusan: pJurusan, prodi: pProdi };
           } 
           
           if (isServerPulang) {
@@ -350,7 +398,6 @@
           isSubmitting = false; 
         })
         .catch(error => {
-          // Jika internet putus, LocalDB aman (tidak korup) dan panitia diinfokan
           addHistory("❌ GAGAL MENGIRIM: " + nama + " (Cek Internet Anda!)");
           isSubmitting = false;
         });
