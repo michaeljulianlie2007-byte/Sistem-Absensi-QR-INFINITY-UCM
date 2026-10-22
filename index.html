@@ -70,12 +70,12 @@
         <div class="guide-mini">
           <div style="font-size: 0.95rem; margin-bottom: 8px;"><strong>📖 SOP Pengurus Registrasi:</strong></div>
           <ol>
-            <li><strong>Tahap Persiapan:</strong> Wajib klik tombol Sinkronisasi (hitam) sebelum mulai sesi Datang maupun Pulang.</li>
-            <li><strong>Tahap Pemindaian:</strong> Arahkan QR ke kamera. Sistem akan otomatis mendeteksi status peserta.</li>
-            <li><strong>Tahap Verifikasi:</strong> Pastikan Nama/NIM sesuai. Centang <i>Entry Ticket</i> jika peserta membawanya (khusus sesi datang).</li>
-            <li><strong>Tahap Eksekusi:</strong> Klik <strong>Kirim Data</strong>. Layar akan seketika kembali ke kamera agar Anda bisa memindai peserta berikutnya tanpa jeda.</li>
+            <li><strong>Tahap Persiapan:</strong> Wajib klik tombol Sinkronisasi sebelum mulai sesi Datang maupun Pulang.</li>
+            <li><strong>Tahap Pemindaian:</strong> Arahkan QR ke kamera. Sistem otomatis mendeteksi status peserta.</li>
+            <li><strong>Tahap Verifikasi:</strong> Pastikan Nama/NIM sesuai. Centang <i>Entry Ticket</i> khusus sesi datang jika peserta membawa bukti.</li>
+            <li><strong>Tahap Eksekusi:</strong> Klik <strong>Kirim Data</strong>. Layar kembali ke kamera seketika untuk pemindaian tanpa jeda.</li>
           </ol>
-          <div class="alert-mini">⚠️ Jika terjadi error/lag jaringan, segera beralih ke pencatatan manual di Google Sheet SPS!</div>
+          <div class="alert-mini">⚠️ Jika terjadi lag parah, segera beralih catat manual di Google Sheet SPS!</div>
         </div>
       </div>
     </div>
@@ -290,6 +290,7 @@
     }
 
     function submitData() {
+      // Fitur Antrean: Cegah tombol bekerja ganda jika terklik dua kali
       if (isSubmitting) return; 
       isSubmitting = true;
 
@@ -300,8 +301,6 @@
       const nama = namaSementara;
       const nimKey = nimSementara.trim();
 
-      // MENGGABUNGKAN KEMBALI KE METODE GET YANG AMAN DARI BLOKIR GOOGLE DRIVE
-      // SERTA MENAMBAHKAN ID UNIK (reqId) UNTUK MEMBLOKIR AUTO-RETRY BROWSER
       const reqId = Date.now().toString(); 
       const submitUrl = urlGoogleScript 
         + "?action=submit&data=" + encodeURIComponent(qrDataSementara) 
@@ -315,38 +314,46 @@
       lastScannedTime = Date.now(); 
       
       let prevState = localDB[nimKey] ? JSON.parse(JSON.stringify(localDB[nimKey])) : null;
+      let historyText = "";
+
+      // 1. UPDATE MEMORI & SIAPKAN TEKS RIWAYAT (Optimistic Logic)
       if (!localDB[nimKey]) {
          localDB[nimKey] = { rgsD: true, waktuD: "Baru saja", rgsP: false, note: noteVal, jurusan: pJurusan, prodi: pProdi };
+         historyText = "✅ Datang: " + nama;
       } else if (!localDB[nimKey].rgsD) {
          localDB[nimKey].rgsD = true; localDB[nimKey].note = noteVal;
+         historyText = "✅ Datang: " + nama;
       } else {
          localDB[nimKey].rgsP = true;
+         historyText = "👋 Pulang: " + nama;
       }
+      
       localStorage.setItem('dbInfinity', JSON.stringify(localDB));
 
+      // 2. MUNCULKAN RIWAYAT SECARA INSTAN! (Tanpa nunggu server Google)
+      addHistory(historyText);
+
+      // 3. TUTUP FORM SEKETIKA
       batalkanScan(); 
 
+      // 4. BUKA GEMBOK TOMBOL DALAM 0.5 DETIK
+      // Ini memungkinkan panitia men-scan orang berikutnya dengan kecepatan penuh!
+      setTimeout(() => { isSubmitting = false; }, 500);
+
+      // 5. KIRIM DATA KE GOOGLE DI LATAR BELAKANG
       fetch(submitUrl)
         .then(response => response.text())
         .then(hasil => {
-          // BLOKIR KERUSAKAN UI JIKA TERJADI ERROR DARI GOOGLE
+          // Tidak perlu cetak riwayat lagi di sini karena sudah instan
           if (hasil.includes("<html") || hasil.toLowerCase().includes("google drive")) {
              throw new Error("Terblokir Sistem Google");
           }
-          
-          // JIKA BROWSER MELAKUKAN AUTO-RETRY, SERVER AKAN MEMBALAS INI DAN KITA ABAIKAN SAJA
-          if (hasil.includes("DIABAIKAN_RETRY")) {
-             isSubmitting = false; return;
-          }
-
-          addHistory(hasil);
-          isSubmitting = false; 
         })
         .catch(error => {
+          // Hanya jika gagal total, memori di-rollback dan panitia diberitahu
           if (prevState) localDB[nimKey] = prevState; else delete localDB[nimKey];
           localStorage.setItem('dbInfinity', JSON.stringify(localDB));
-          addHistory("❌ GAGAL MENGIRIM: " + nama + " (Periksa Internet)");
-          isSubmitting = false;
+          addHistory("❌ GAGAL (Cek Internet): " + nama);
         });
     }
 
