@@ -21,9 +21,10 @@
     .btn-sync:disabled { background-color: #666; cursor: not-allowed; }
     #reader { width: 100%; border-radius: 6px; overflow: hidden; border: 1px solid var(--border-color); }
     #reader button { background: var(--primary-color) !important; color: white !important; border: none !important; padding: 8px 12px !important; border-radius: 4px !important; cursor: pointer; font-family: 'Inter', sans-serif;}
-    .guide-mini { background: #f8f9fa; border: 1px solid var(--border-color); border-radius: 6px; padding: 12px; margin-top: 15px; font-size: 0.85rem; color: #555; }
+    .guide-mini { background: #f8f9fa; border: 1px solid var(--border-color); border-radius: 6px; padding: 15px; margin-top: 15px; font-size: 0.85rem; color: #444; }
     .guide-mini strong { color: var(--primary-color); }
-    .guide-mini ol { margin-left: 15px; margin-top: 8px; margin-bottom: 12px; line-height: 1.5; }
+    .guide-mini ol { margin-left: 18px; margin-top: 10px; margin-bottom: 12px; line-height: 1.6; }
+    .alert-mini { color: #842029; background: #f8d7da; padding: 10px; border-radius: 4px; font-weight: 600; text-align: center; font-size: 0.8rem; border: 1px solid #f5c2c7;}
     .form-review { display: none; background: #fdfdfd; border: 2px dashed var(--primary-color); border-radius: 6px; padding: 15px; margin-bottom: 20px; }
     .form-review h3 { color: var(--primary-color); margin-bottom: 10px; font-size: 1.1rem;}
     .scanned-info { font-size: 1.2rem; font-weight: 700; margin-bottom: 5px; color: #111;}
@@ -65,13 +66,19 @@
       <div class="panel-body">
         <button class="btn-sync" id="btn-sync" onclick="syncData()">🔄 Sinkronisasi Data SPS (Klik Sebelum Mulai)</button>
         <div id="reader"></div>
+        
+        <!-- PANDUAN PENGURUS BARU -->
         <div class="guide-mini">
-          <strong>📖 Panduan Pengurus:</strong>
+          <div style="font-size: 0.95rem; margin-bottom: 8px;"><strong>📖 SOP Pengurus Registrasi:</strong></div>
           <ol>
-            <li><strong>Wajib Sinkronisasi</strong> sebelum mulai sesi.</li>
-            <li>Sistem kini menggunakan fitur <strong>POST Database</strong> (Mencegah absen terinput 2 kali otomatis).</li>
+            <li><strong>Tahap Persiapan:</strong> Wajib klik tombol Sinkronisasi (hitam) sebelum mulai sesi Datang maupun Pulang.</li>
+            <li><strong>Tahap Pemindaian:</strong> Arahkan QR ke kamera. Sistem akan otomatis mendeteksi status peserta.</li>
+            <li><strong>Tahap Verifikasi:</strong> Pastikan Nama/NIM sesuai. Centang <i>Entry Ticket</i> jika peserta membawanya (khusus sesi datang).</li>
+            <li><strong>Tahap Eksekusi:</strong> Klik <strong>Kirim Data</strong>. Layar akan seketika kembali ke kamera agar Anda bisa memindai peserta berikutnya tanpa jeda.</li>
           </ol>
+          <div class="alert-mini">⚠️ Jika terjadi error/lag jaringan, segera beralih ke pencatatan manual di Google Sheet SPS!</div>
         </div>
+
       </div>
     </div>
 
@@ -271,7 +278,7 @@
       document.getElementById('group-ticket').style.display = 'none'; 
       document.getElementById('box-prodi-jurusan').style.display = 'none';
       formReview.style.borderStyle = "solid"; formReview.style.borderColor = "var(--blue-color)";
-      document.getElementById('input-note').value = ""; document.getElementById('input-note').placeholder = "Catatan Pulang (Opsional, akan otomatis digabung)...";
+      document.getElementById('input-note').value = ""; document.getElementById('input-note').placeholder = "Catatan Pulang (Opsional, otomatis digabung)...";
       formReview.style.display = 'block';
     }
 
@@ -293,7 +300,6 @@
       const nama = namaSementara;
       const nimKey = nimSementara.trim();
 
-      // MENGUBAH URL PARAMETER MENJADI FORM DATA (POST METHOD)
       const formData = new URLSearchParams();
       formData.append("action", "submit");
       formData.append("data", qrDataSementara);
@@ -317,7 +323,6 @@
 
       batalkanScan(); 
 
-      // PENGIRIMAN MENGGUNAKAN METODE POST
       fetch(urlGoogleScript, {
           method: 'POST',
           body: formData
