@@ -67,7 +67,6 @@
         <button class="btn-sync" id="btn-sync" onclick="syncData()">🔄 Sinkronisasi Data SPS (Klik Sebelum Mulai)</button>
         <div id="reader"></div>
         
-        <!-- PANDUAN PENGURUS BARU -->
         <div class="guide-mini">
           <div style="font-size: 0.95rem; margin-bottom: 8px;"><strong>📖 SOP Pengurus Registrasi:</strong></div>
           <ol>
@@ -78,7 +77,6 @@
           </ol>
           <div class="alert-mini">⚠️ Jika terjadi error/lag jaringan, segera beralih ke pencatatan manual di Google Sheet SPS!</div>
         </div>
-
       </div>
     </div>
 
@@ -180,8 +178,10 @@
       btn.disabled = true;
 
       fetch(urlGoogleScript + "?action=sync")
-        .then(r => r.json())
-        .then(data => {
+        .then(r => r.text())
+        .then(text => {
+           if(text.includes("<html") || text.includes("Drive")) throw new Error("Terblokir Sistem Google");
+           const data = JSON.parse(text);
            localDB = data;
            localStorage.setItem('dbInfinity', JSON.stringify(data));
            alert("✅ Berhasil Sinkronisasi.");
@@ -300,13 +300,16 @@
       const nama = namaSementara;
       const nimKey = nimSementara.trim();
 
-      const formData = new URLSearchParams();
-      formData.append("action", "submit");
-      formData.append("data", qrDataSementara);
-      formData.append("ticket", isTicket);
-      formData.append("prodi", pProdi);
-      formData.append("jurusan", pJurusan);
-      formData.append("note", noteVal);
+      // MENGGABUNGKAN KEMBALI KE METODE GET YANG AMAN DARI BLOKIR GOOGLE DRIVE
+      // SERTA MENAMBAHKAN ID UNIK (reqId) UNTUK MEMBLOKIR AUTO-RETRY BROWSER
+      const reqId = Date.now().toString(); 
+      const submitUrl = urlGoogleScript 
+        + "?action=submit&data=" + encodeURIComponent(qrDataSementara) 
+        + "&ticket=" + isTicket 
+        + "&prodi=" + encodeURIComponent(pProdi) 
+        + "&jurusan=" + encodeURIComponent(pJurusan)
+        + "&note=" + encodeURIComponent(noteVal)
+        + "&reqId=" + reqId;
 
       lastScannedNim = nimKey;
       lastScannedTime = Date.now(); 
@@ -323,19 +326,26 @@
 
       batalkanScan(); 
 
-      fetch(urlGoogleScript, {
-          method: 'POST',
-          body: formData
-        })
+      fetch(submitUrl)
         .then(response => response.text())
         .then(hasil => {
+          // BLOKIR KERUSAKAN UI JIKA TERJADI ERROR DARI GOOGLE
+          if (hasil.includes("<html") || hasil.toLowerCase().includes("google drive")) {
+             throw new Error("Terblokir Sistem Google");
+          }
+          
+          // JIKA BROWSER MELAKUKAN AUTO-RETRY, SERVER AKAN MEMBALAS INI DAN KITA ABAIKAN SAJA
+          if (hasil.includes("DIABAIKAN_RETRY")) {
+             isSubmitting = false; return;
+          }
+
           addHistory(hasil);
           isSubmitting = false; 
         })
         .catch(error => {
           if (prevState) localDB[nimKey] = prevState; else delete localDB[nimKey];
           localStorage.setItem('dbInfinity', JSON.stringify(localDB));
-          addHistory("❌ GAGAL MENGIRIM: " + nama + " (Cek Internet!)");
+          addHistory("❌ GAGAL MENGIRIM: " + nama + " (Periksa Internet)");
           isSubmitting = false;
         });
     }
