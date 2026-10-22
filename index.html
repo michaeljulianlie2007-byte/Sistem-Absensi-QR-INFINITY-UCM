@@ -60,7 +60,7 @@
   <div class="dashboard-container">
     <div class="panel">
       <div class="panel-header">
-        <img src="lg-infinity.png" alt="Logo"> Pindai QR Code
+        <img src="lg-infintiy.png" alt="Logo"> Pindai QR Code
       </div>
       <div class="panel-body">
         <button class="btn-sync" id="btn-sync" onclick="syncData()">🔄 Sinkronisasi Data SPS (Klik Sebelum Mulai)</button>
@@ -69,7 +69,7 @@
           <strong>📖 Panduan Pengurus:</strong>
           <ol>
             <li><strong>Wajib Sinkronisasi</strong> sebelum mulai sesi.</li>
-            <li>Sistem dilindungi fitur <strong>Anti-Double Scan</strong>. QR yang sama tidak bisa di-scan 2x dalam 5 detik.</li>
+            <li>Sistem kini menggunakan fitur <strong>POST Database</strong> (Mencegah absen terinput 2 kali otomatis).</li>
           </ol>
         </div>
       </div>
@@ -142,7 +142,6 @@
     let namaSementara = "";
     let nimSementara = "";
     
-    // VARIABEL ANTI-GHOST SCAN
     let lastScannedNim = "";
     let lastScannedTime = 0;
 
@@ -220,10 +219,7 @@
 
       let nim = dataPecah[0].trim();
 
-      // FITUR PENGAMAN: JEDA 5 DETIK UNTUK NIM YANG SAMA (ANTI-GHOST SCAN)
-      if (nim === lastScannedNim && (Date.now() - lastScannedTime < 5000)) {
-          return; // Abaikan diam-diam
-      }
+      if (nim === lastScannedNim && (Date.now() - lastScannedTime < 5000)) return;
 
       isProcessing = true; 
       qrDataSementara = decodedText;
@@ -297,17 +293,18 @@
       const nama = namaSementara;
       const nimKey = nimSementara.trim();
 
-      const submitUrl = urlGoogleScript 
-        + "?action=submit&data=" + encodeURIComponent(qrDataSementara) 
-        + "&ticket=" + isTicket 
-        + "&prodi=" + encodeURIComponent(pProdi) + "&jurusan=" + encodeURIComponent(pJurusan)
-        + "&note=" + encodeURIComponent(noteVal);
+      // MENGUBAH URL PARAMETER MENJADI FORM DATA (POST METHOD)
+      const formData = new URLSearchParams();
+      formData.append("action", "submit");
+      formData.append("data", qrDataSementara);
+      formData.append("ticket", isTicket);
+      formData.append("prodi", pProdi);
+      formData.append("jurusan", pJurusan);
+      formData.append("note", noteVal);
 
-      // MULAI FITUR ANTI GHOST-SCAN
       lastScannedNim = nimKey;
-      lastScannedTime = Date.now(); // Kunci NIM ini selama 5 detik ke depan
+      lastScannedTime = Date.now(); 
       
-      // OPTIMISTIC UI: Update HP duluan agar aman
       let prevState = localDB[nimKey] ? JSON.parse(JSON.stringify(localDB[nimKey])) : null;
       if (!localDB[nimKey]) {
          localDB[nimKey] = { rgsD: true, waktuD: "Baru saja", rgsP: false, note: noteVal, jurusan: pJurusan, prodi: pProdi };
@@ -318,17 +315,19 @@
       }
       localStorage.setItem('dbInfinity', JSON.stringify(localDB));
 
-      // TUTUP FORM SEKETIKA
       batalkanScan(); 
 
-      fetch(submitUrl)
+      // PENGIRIMAN MENGGUNAKAN METODE POST
+      fetch(urlGoogleScript, {
+          method: 'POST',
+          body: formData
+        })
         .then(response => response.text())
         .then(hasil => {
           addHistory(hasil);
           isSubmitting = false; 
         })
         .catch(error => {
-          // ROLLBACK JIKA GAGAL INTERNET
           if (prevState) localDB[nimKey] = prevState; else delete localDB[nimKey];
           localStorage.setItem('dbInfinity', JSON.stringify(localDB));
           addHistory("❌ GAGAL MENGIRIM: " + nama + " (Cek Internet!)");
