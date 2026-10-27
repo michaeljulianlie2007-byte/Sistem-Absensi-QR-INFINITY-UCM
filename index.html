@@ -205,28 +205,53 @@
         }
     }
 
-    // Fungsi Sync Latar Belakang
+// ========================================================
+    // FUNGSI SINKRONISASI LATAR BELAKANG YANG LEBIH AGRESIF
+    // ========================================================
     function silentSync() {
       fetch(urlGoogleScript + "?action=sync")
         .then(r => r.text())
         .then(text => {
-           if(text.includes("<html") || text.includes("Drive")) return;
+           if(text.includes("<html") || text.includes("Drive")) throw new Error("Terblokir");
            const data = JSON.parse(text);
            localDB = data;
            localStorage.setItem('dbInfinity', JSON.stringify(data));
            updateUI_SyncSuccess();
         }).catch(err => {
-           console.log("Silent sync gagal.");
+           // JIKA GAGAL DIAM-DIAM (KARENA INTERNET BLIP), UBAH INDIKATOR JADI KUNING
+           console.log("Auto-sync gagal ditarik.");
            const statusEl = document.getElementById('sync-status');
-           if(statusEl && statusEl.innerText.includes("Memuat")) {
-               statusEl.innerText = "❌ Gagal memuat data. Cek internet & muat ulang halaman.";
+           if(statusEl) {
+               statusEl.innerText = "⚠️ Gagal update otomatis (Cek Internet Anda)";
+               statusEl.style.color = "#842029";
+               statusEl.style.backgroundColor = "#f8d7da";
+               statusEl.style.borderColor = "#f5c2c7";
            }
         });
     }
 
-    setInterval(silentSync, 300000); // Otomatis tiap 5 menit
+    // ========================================================
+    // ANTI-THROTTLING: MENGGUNAKAN WEB WORKER AGAR TIDAK DITIDURKAN BROWSER
+    // ========================================================
+    // Kita membuat "pekerja virtual" di luar tab utama khusus untuk memegang stopwatch
+    const workerScript = `
+      setInterval(() => {
+        postMessage('waktunya_sync');
+      }, 300000); // 300.000 ms = 5 Menit mutlak
+    `;
+    const workerBlob = new Blob([workerScript], { type: "application/javascript" });
+    const timerWorker = new Worker(URL.createObjectURL(workerBlob));
+
+    // Saat pekerja virtual berteriak "waktunya_sync", jalankan silentSync()
+    timerWorker.onmessage = function(e) {
+      if (e.data === 'waktunya_sync') {
+        silentSync();
+      }
+    };
+
+    // Tetap pertahankan pemicu instan saat panitia kembali membuka tab
     document.addEventListener("visibilitychange", () => {
-      if (document.visibilityState === "visible") silentSync(); // Otomatis saat tab dibuka
+      if (document.visibilityState === "visible") silentSync(); 
     });
 
     function updateJurusan() {
