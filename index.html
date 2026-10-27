@@ -16,9 +16,10 @@
     .panel-header { background-color: var(--primary-color); color: white; padding: 15px 20px; font-weight: 600; font-size: 1.1rem; display: flex; align-items: center; gap: 10px; }
     .panel-header img { height: 28px; }
     .panel-body { padding: 20px; display: flex; flex-direction: column;}
-    .btn-sync { background-color: #333; color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: 600; width: 100%; margin-bottom: 20px; transition: 0.2s; font-size: 0.95rem; }
-    .btn-sync:hover { background-color: #111; }
-    .btn-sync:disabled { background-color: #666; cursor: not-allowed; }
+    
+    /* Indikator Status Auto-Sync */
+    .sync-indicator { text-align: center; font-size: 0.85rem; font-weight: 600; margin-bottom: 15px; padding: 8px; border-radius: 4px; background: #f8f9fa; border: 1px solid var(--border-color); }
+    
     #reader { width: 100%; border-radius: 6px; overflow: hidden; border: 1px solid var(--border-color); }
     #reader button { background: var(--primary-color) !important; color: white !important; border: none !important; padding: 8px 12px !important; border-radius: 4px !important; cursor: pointer; font-family: 'Inter', sans-serif;}
     .guide-mini { background: #f8f9fa; border: 1px solid var(--border-color); border-radius: 6px; padding: 15px; margin-top: 15px; font-size: 0.85rem; color: #444; }
@@ -64,13 +65,16 @@
         <img src="lg-infinity.png" alt="Logo"> Pindai QR Code
       </div>
       <div class="panel-body">
-        <button class="btn-sync" id="btn-sync" onclick="syncData()">🔄 Sinkronisasi Data SPS</button>
+        
+        <!-- Teks Indikator Pengganti Tombol (Hanya untuk info) -->
+        <div id="sync-status" class="sync-indicator">⏳ Memeriksa status data...</div>
+        
         <div id="reader"></div>
         
         <div class="guide-mini">
           <div style="font-size: 0.95rem; margin-bottom: 8px;"><strong>📖 SOP Pengurus Registrasi:</strong></div>
           <ol>
-            <li><strong>Tahap Persiapan:</strong> Wajib klik tombol Sinkronisasi pertama kali sebelum mulai acara. Setelah itu sistem update otomatis.</li>
+            <li><strong>Tahap Persiapan:</strong> Pastikan teks di atas kamera berwarna hijau ("Data ter-update") sebelum memindai.</li>
             <li><strong>Tahap Pemindaian:</strong> Arahkan QR ke kamera. Sistem otomatis mendeteksi status peserta.</li>
             <li><strong>Tahap Verifikasi:</strong> Pastikan Nama/NIM sesuai. Centang <i>Entry Ticket</i> khusus sesi datang jika peserta membawa bukti.</li>
             <li><strong>Tahap Eksekusi:</strong> Klik <strong>Kirim Data</strong>. Layar kembali ke kamera seketika untuk pemindaian tanpa jeda.</li>
@@ -159,22 +163,32 @@
 
     const jurusanMap = { "MAN": ["IBM", "CBM", "DBM", "BMM", "TAX"], "IMT": ["AD", "AI"], "VCD": ["GD", "ILX", "DMD"] };
 
-    // Pengecekan Status Sinkronisasi
+    // Mengecek & Memuat Data Otomatis Saat Web Dibuka
     window.onload = () => {
         let lastSync = localStorage.getItem('lastSyncTime');
-        const btn = document.getElementById('btn-sync');
-        if (lastSync) {
+        const statusEl = document.getElementById('sync-status');
+        
+        // Jika belum pernah sync sama sekali atau data lokal kosong
+        if (!lastSync || Object.keys(localDB).length === 0) {
+            statusEl.innerText = "⏳ Memuat database SPS pertama kali...";
+            statusEl.style.color = "#842029";
+            statusEl.style.backgroundColor = "#f8d7da";
+            statusEl.style.borderColor = "#f5c2c7";
+            silentSync();
+        } else {
             let selisihJam = (Date.now() - lastSync) / (1000 * 60 * 60);
             if (selisihJam > 2) {
-                btn.style.backgroundColor = "#dc3545"; 
-                btn.innerText = "⚠️ Data Usang! Wajib Klik Sinkronisasi";
+                statusEl.innerText = "⚠️ Data sedang diperbarui di latar belakang...";
+                statusEl.style.color = "#842029";
+                statusEl.style.backgroundColor = "#f8d7da";
+                silentSync();
             } else {
                 let timeStr = new Date(parseInt(lastSync)).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-                btn.innerText = "🔄 Data Ter-update (" + timeStr + ")";
+                statusEl.innerText = "✅ Data ter-update (" + timeStr + ")";
+                statusEl.style.color = "#0f5132";
+                statusEl.style.backgroundColor = "#d1e7dd";
+                statusEl.style.borderColor = "#badbcc";
             }
-        } else {
-            btn.style.backgroundColor = "#dc3545";
-            btn.innerText = "⚠️ Klik Sinkronisasi Sebelum Mulai!";
         }
     };
 
@@ -182,35 +196,16 @@
         let now = Date.now();
         localStorage.setItem('lastSyncTime', now);
         let timeStr = new Date(now).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-        const btn = document.getElementById('btn-sync');
-        btn.innerText = "🔄 Data Ter-update (" + timeStr + ")";
-        btn.style.backgroundColor = "#333";
-        btn.disabled = false;
+        const statusEl = document.getElementById('sync-status');
+        if (statusEl) {
+            statusEl.innerText = "✅ Data ter-update (" + timeStr + ")";
+            statusEl.style.color = "#0f5132";
+            statusEl.style.backgroundColor = "#d1e7dd";
+            statusEl.style.borderColor = "#badbcc";
+        }
     }
 
-    // Fungsi Sinkronisasi (Metode GET aman untuk ambil data)
-    function syncData() {
-      const btn = document.getElementById('btn-sync');
-      btn.innerText = "⏳ Mengunduh Database SPS...";
-      btn.disabled = true;
-
-      fetch(urlGoogleScript + "?action=sync")
-        .then(r => r.text())
-        .then(text => {
-           if(text.includes("<html") || text.includes("Drive")) throw new Error("Terblokir Sistem Google");
-           const data = JSON.parse(text);
-           localDB = data;
-           localStorage.setItem('dbInfinity', JSON.stringify(data));
-           updateUI_SyncSuccess();
-           alert("✅ Berhasil Sinkronisasi Data.");
-        }).catch(err => {
-           alert("❌ Gagal terhubung ke server.");
-           btn.innerText = "🔄 Coba Sinkronisasi Lagi";
-           btn.style.backgroundColor = "#dc3545";
-           btn.disabled = false;
-        });
-    }
-
+    // Fungsi Sync Latar Belakang
     function silentSync() {
       fetch(urlGoogleScript + "?action=sync")
         .then(r => r.text())
@@ -220,12 +215,18 @@
            localDB = data;
            localStorage.setItem('dbInfinity', JSON.stringify(data));
            updateUI_SyncSuccess();
-        }).catch(err => console.log("Silent sync gagal, abaikan."));
+        }).catch(err => {
+           console.log("Silent sync gagal.");
+           const statusEl = document.getElementById('sync-status');
+           if(statusEl && statusEl.innerText.includes("Memuat")) {
+               statusEl.innerText = "❌ Gagal memuat data. Cek internet & muat ulang halaman.";
+           }
+        });
     }
 
-    setInterval(silentSync, 300000); // 5 Menit
+    setInterval(silentSync, 300000); // Otomatis tiap 5 menit
     document.addEventListener("visibilitychange", () => {
-      if (document.visibilityState === "visible") silentSync();
+      if (document.visibilityState === "visible") silentSync(); // Otomatis saat tab dibuka
     });
 
     function updateJurusan() {
@@ -345,7 +346,6 @@
       const nimKey = nimSementara.trim();
       const reqId = Date.now().toString(); 
 
-      // MENGGUNAKAN METODE POST (AMPLOP TERTUTUP) UNTUK KEAMANAN & ANTI-POTONG
       const formData = new URLSearchParams();
       formData.append('action', 'submit');
       formData.append('data', qrDataSementara);
@@ -377,7 +377,6 @@
       batalkanScan(); 
       setTimeout(() => { isSubmitting = false; }, 500);
 
-      // Pengiriman latar belakang menggunakan metode POST
       fetch(urlGoogleScript, {
           method: 'POST',
           body: formData
