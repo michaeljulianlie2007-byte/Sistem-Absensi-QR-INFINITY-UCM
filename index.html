@@ -64,13 +64,13 @@
         <img src="lg-infinity.png" alt="Logo"> Pindai QR Code
       </div>
       <div class="panel-body">
-        <button class="btn-sync" id="btn-sync" onclick="syncData()">🔄 Sinkronisasi Data SPS (Klik Sebelum Mulai)</button>
+        <button class="btn-sync" id="btn-sync" onclick="syncData()">🔄 Sinkronisasi Data SPS</button>
         <div id="reader"></div>
         
         <div class="guide-mini">
           <div style="font-size: 0.95rem; margin-bottom: 8px;"><strong>📖 SOP Pengurus Registrasi:</strong></div>
           <ol>
-            <li><strong>Tahap Persiapan:</strong> Wajib klik tombol Sinkronisasi sebelum mulai sesi Datang maupun Pulang.</li>
+            <li><strong>Tahap Persiapan:</strong> Wajib klik tombol Sinkronisasi pertama kali sebelum mulai acara. Setelah itu sistem update otomatis.</li>
             <li><strong>Tahap Pemindaian:</strong> Arahkan QR ke kamera. Sistem otomatis mendeteksi status peserta.</li>
             <li><strong>Tahap Verifikasi:</strong> Pastikan Nama/NIM sesuai. Centang <i>Entry Ticket</i> khusus sesi datang jika peserta membawa bukti.</li>
             <li><strong>Tahap Eksekusi:</strong> Klik <strong>Kirim Data</strong>. Layar kembali ke kamera seketika untuk pemindaian tanpa jeda.</li>
@@ -146,7 +146,6 @@
     let qrDataSementara = ""; 
     let namaSementara = "";
     let nimSementara = "";
-    
     let lastScannedNim = "";
     let lastScannedTime = 0;
 
@@ -160,18 +159,36 @@
 
     const jurusanMap = { "MAN": ["IBM", "CBM", "DBM", "BMM", "TAX"], "IMT": ["AD", "AI"], "VCD": ["GD", "ILX", "DMD"] };
 
-    function updateJurusan() {
-      const prodiVal = document.getElementById('input-prodi').value;
-      const jurSelect = document.getElementById('input-jurusan');
-      jurSelect.innerHTML = '<option value="">-- Pilih Jurusan --</option>';
-      if (prodiVal && jurusanMap[prodiVal]) {
-          jurusanMap[prodiVal].forEach(j => {
-              let opt = document.createElement('option');
-              opt.value = j; opt.innerText = j; jurSelect.appendChild(opt);
-          });
-      }
+    // Pengecekan Status Sinkronisasi
+    window.onload = () => {
+        let lastSync = localStorage.getItem('lastSyncTime');
+        const btn = document.getElementById('btn-sync');
+        if (lastSync) {
+            let selisihJam = (Date.now() - lastSync) / (1000 * 60 * 60);
+            if (selisihJam > 2) {
+                btn.style.backgroundColor = "#dc3545"; 
+                btn.innerText = "⚠️ Data Usang! Wajib Klik Sinkronisasi";
+            } else {
+                let timeStr = new Date(parseInt(lastSync)).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+                btn.innerText = "🔄 Data Ter-update (" + timeStr + ")";
+            }
+        } else {
+            btn.style.backgroundColor = "#dc3545";
+            btn.innerText = "⚠️ Klik Sinkronisasi Sebelum Mulai!";
+        }
+    };
+
+    function updateUI_SyncSuccess() {
+        let now = Date.now();
+        localStorage.setItem('lastSyncTime', now);
+        let timeStr = new Date(now).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+        const btn = document.getElementById('btn-sync');
+        btn.innerText = "🔄 Data Ter-update (" + timeStr + ")";
+        btn.style.backgroundColor = "#333";
+        btn.disabled = false;
     }
 
+    // Fungsi Sinkronisasi (Metode GET aman untuk ambil data)
     function syncData() {
       const btn = document.getElementById('btn-sync');
       btn.innerText = "⏳ Mengunduh Database SPS...";
@@ -184,14 +201,43 @@
            const data = JSON.parse(text);
            localDB = data;
            localStorage.setItem('dbInfinity', JSON.stringify(data));
-           alert("✅ Berhasil Sinkronisasi.");
-           btn.innerText = "✅ Data SPS Ter-update";
-           setTimeout(() => { btn.innerText = "🔄 Sinkronisasi Data SPS (Klik Sebelum Mulai)"; btn.disabled = false; }, 3000);
+           updateUI_SyncSuccess();
+           alert("✅ Berhasil Sinkronisasi Data.");
         }).catch(err => {
            alert("❌ Gagal terhubung ke server.");
            btn.innerText = "🔄 Coba Sinkronisasi Lagi";
+           btn.style.backgroundColor = "#dc3545";
            btn.disabled = false;
         });
+    }
+
+    function silentSync() {
+      fetch(urlGoogleScript + "?action=sync")
+        .then(r => r.text())
+        .then(text => {
+           if(text.includes("<html") || text.includes("Drive")) return;
+           const data = JSON.parse(text);
+           localDB = data;
+           localStorage.setItem('dbInfinity', JSON.stringify(data));
+           updateUI_SyncSuccess();
+        }).catch(err => console.log("Silent sync gagal, abaikan."));
+    }
+
+    setInterval(silentSync, 300000); // 5 Menit
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") silentSync();
+    });
+
+    function updateJurusan() {
+      const prodiVal = document.getElementById('input-prodi').value;
+      const jurSelect = document.getElementById('input-jurusan');
+      jurSelect.innerHTML = '<option value="">-- Pilih Jurusan --</option>';
+      if (prodiVal && jurusanMap[prodiVal]) {
+          jurusanMap[prodiVal].forEach(j => {
+              let opt = document.createElement('option');
+              opt.value = j; opt.innerText = j; jurSelect.appendChild(opt);
+          });
+      }
     }
 
     function renderHistory() {
@@ -225,7 +271,6 @@
       if (dataPecah.length < 3) { alert("❌ QR Code Ditolak. Format salah."); return; }
 
       let nim = dataPecah[0].trim();
-
       if (nim === lastScannedNim && (Date.now() - lastScannedTime < 5000)) return;
 
       isProcessing = true; 
@@ -238,7 +283,6 @@
       readerDiv.classList.add('blur-scanner'); 
 
       let person = localDB[nimSementara];
-
       if (!person || person.rgsD !== true) {
           setupUI_Datang(namaSementara, nimSementara, !person);
       } else if (person.rgsP !== true) {
@@ -290,7 +334,6 @@
     }
 
     function submitData() {
-      // Fitur Antrean: Cegah tombol bekerja ganda jika terklik dua kali
       if (isSubmitting) return; 
       isSubmitting = true;
 
@@ -300,15 +343,17 @@
       const pJurusan = document.getElementById('input-jurusan').value;
       const nama = namaSementara;
       const nimKey = nimSementara.trim();
-
       const reqId = Date.now().toString(); 
-      const submitUrl = urlGoogleScript 
-        + "?action=submit&data=" + encodeURIComponent(qrDataSementara) 
-        + "&ticket=" + isTicket 
-        + "&prodi=" + encodeURIComponent(pProdi) 
-        + "&jurusan=" + encodeURIComponent(pJurusan)
-        + "&note=" + encodeURIComponent(noteVal)
-        + "&reqId=" + reqId;
+
+      // MENGGUNAKAN METODE POST (AMPLOP TERTUTUP) UNTUK KEAMANAN & ANTI-POTONG
+      const formData = new URLSearchParams();
+      formData.append('action', 'submit');
+      formData.append('data', qrDataSementara);
+      formData.append('ticket', isTicket);
+      formData.append('prodi', pProdi);
+      formData.append('jurusan', pJurusan);
+      formData.append('note', noteVal);
+      formData.append('reqId', reqId);
 
       lastScannedNim = nimKey;
       lastScannedTime = Date.now(); 
@@ -316,7 +361,6 @@
       let prevState = localDB[nimKey] ? JSON.parse(JSON.stringify(localDB[nimKey])) : null;
       let historyText = "";
 
-      // 1. UPDATE MEMORI & SIAPKAN TEKS RIWAYAT (Optimistic Logic)
       if (!localDB[nimKey]) {
          localDB[nimKey] = { rgsD: true, waktuD: "Baru saja", rgsP: false, note: noteVal, jurusan: pJurusan, prodi: pProdi };
          historyText = "✅ Datang: " + nama;
@@ -329,32 +373,26 @@
       }
       
       localStorage.setItem('dbInfinity', JSON.stringify(localDB));
-
-      // 2. MUNCULKAN RIWAYAT SECARA INSTAN! (Tanpa nunggu server Google)
       addHistory(historyText);
-
-      // 3. TUTUP FORM SEKETIKA
       batalkanScan(); 
-
-      // 4. BUKA GEMBOK TOMBOL DALAM 0.5 DETIK
-      // Ini memungkinkan panitia men-scan orang berikutnya dengan kecepatan penuh!
       setTimeout(() => { isSubmitting = false; }, 500);
 
-      // 5. KIRIM DATA KE GOOGLE DI LATAR BELAKANG
-      fetch(submitUrl)
-        .then(response => response.text())
-        .then(hasil => {
-          // Tidak perlu cetak riwayat lagi di sini karena sudah instan
+      // Pengiriman latar belakang menggunakan metode POST
+      fetch(urlGoogleScript, {
+          method: 'POST',
+          body: formData
+      })
+      .then(response => response.text())
+      .then(hasil => {
           if (hasil.includes("<html") || hasil.toLowerCase().includes("google drive")) {
              throw new Error("Terblokir Sistem Google");
           }
-        })
-        .catch(error => {
-          // Hanya jika gagal total, memori di-rollback dan panitia diberitahu
+      })
+      .catch(error => {
           if (prevState) localDB[nimKey] = prevState; else delete localDB[nimKey];
           localStorage.setItem('dbInfinity', JSON.stringify(localDB));
           addHistory("❌ GAGAL (Cek Internet): " + nama);
-        });
+      });
     }
 
     var html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: { width: 250, height: 250 } }, false);
