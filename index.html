@@ -17,7 +17,6 @@
     .panel-header img { height: 28px; }
     .panel-body { padding: 20px; display: flex; flex-direction: column;}
     
-    /* Indikator Status Auto-Sync */
     .sync-indicator { text-align: center; font-size: 0.85rem; font-weight: 600; margin-bottom: 15px; padding: 8px; border-radius: 4px; background: #f8f9fa; border: 1px solid var(--border-color); }
     
     #reader { width: 100%; border-radius: 6px; overflow: hidden; border: 1px solid var(--border-color); }
@@ -29,7 +28,6 @@
     .form-review { display: none; background: #fdfdfd; border: 2px dashed var(--primary-color); border-radius: 6px; padding: 15px; margin-bottom: 20px; }
     .form-review h3 { color: var(--primary-color); margin-bottom: 10px; font-size: 1.1rem;}
     .scanned-info { font-size: 1.2rem; font-weight: 700; margin-bottom: 5px; color: #111;}
-    .scanned-nim { font-size: 0.9rem; color: #666; margin-bottom: 15px;}
     .pulang-info-box { display: none; background: #e1f5fe; border-left: 4px solid var(--blue-color); padding: 12px; border-radius: 4px; margin-bottom: 15px; font-size: 0.85rem; line-height: 1.4; }
     .pulang-info-box strong { color: var(--blue-color); }
     .input-group { margin-bottom: 15px; }
@@ -56,17 +54,23 @@
     .history-time { font-weight: bold; margin-right: 5px;}
     .history-empty { text-align: center; color: #999; font-size: 0.85rem; font-style: italic; margin-top: 10px; }
     .blur-scanner { filter: blur(4px) grayscale(50%); pointer-events: none; }
+    
+    /* Tambahan Tombol Sheet & UI Kelompok */
+    .btn-sheet { display: block; width: 100%; background-color: #0f9d58; color: white; text-align: center; padding: 12px; border-radius: 6px; text-decoration: none; font-weight: 600; margin-top: 15px; font-size: 0.95rem; border: none; cursor: pointer; transition: 0.2s; }
+    .btn-sheet:hover { background-color: #0b8043; }
+    .scanned-nim { font-size: 0.9rem; color: #666; margin-bottom: 5px;}
+    .scanned-kelompok { display: inline-block; background: #eee; padding: 5px 10px; border-radius: 6px; font-size: 0.85rem; font-weight: 600; color: #444; margin-bottom: 15px; border: 1px solid #ddd; }
   </style>
 </head>
 <body>
   <div class="dashboard-container">
+    <!-- PANEL 1: PEMINDAIAN -->
     <div class="panel">
       <div class="panel-header">
         <img src="lg-infinity.png" alt="Logo"> Pindai QR Code
       </div>
       <div class="panel-body">
         
-        <!-- Teks Indikator Pengganti Tombol (Hanya untuk info) -->
         <div id="sync-status" class="sync-indicator">⏳ Memeriksa status data...</div>
         
         <div id="reader"></div>
@@ -81,9 +85,15 @@
           </ol>
           <div class="alert-mini">⚠️ Jika terjadi lag parah, segera beralih catat manual di Google Sheet SPS!</div>
         </div>
+
+        <!-- Tombol Google Sheet Baru -->
+        <a href="https://docs.google.com/spreadsheets/d/1U-XQ6iAhImiQ1Fta7dc_7Mp_sungcMcDjDic_uLFzW8/edit?usp=sharing" target="_blank" class="btn-sheet">
+          📄 Buka Google Sheet Manual
+        </a>
       </div>
     </div>
 
+    <!-- PANEL 2: VERIFIKASI -->
     <div class="panel">
       <div class="panel-header" style="background-color: #333;">Verifikasi & Riwayat</div>
       <div class="panel-body">
@@ -94,6 +104,9 @@
           <h3 id="form-title">Konfirmasi Kedatangan</h3>
           <div class="scanned-info" id="display-nama">-</div>
           <div class="scanned-nim" id="display-nim">-</div>
+          
+          <!-- Indikator Kelompok Baru -->
+          <div class="scanned-kelompok" id="display-kelompok">Kelompok: -</div>
           
           <div class="pulang-info-box" id="box-pulang-info">
             <strong>Jurusan/Prodi:</strong> <span id="display-jurusan-prodi"></span><br>
@@ -168,7 +181,6 @@
         let lastSync = localStorage.getItem('lastSyncTime');
         const statusEl = document.getElementById('sync-status');
         
-        // Jika belum pernah sync sama sekali atau data lokal kosong
         if (!lastSync || Object.keys(localDB).length === 0) {
             statusEl.innerText = "⏳ Memuat database SPS pertama kali...";
             statusEl.style.color = "#842029";
@@ -205,9 +217,6 @@
         }
     }
 
-// ========================================================
-    // FUNGSI SINKRONISASI LATAR BELAKANG YANG LEBIH AGRESIF
-    // ========================================================
     function silentSync() {
       fetch(urlGoogleScript + "?action=sync")
         .then(r => r.text())
@@ -218,7 +227,6 @@
            localStorage.setItem('dbInfinity', JSON.stringify(data));
            updateUI_SyncSuccess();
         }).catch(err => {
-           // JIKA GAGAL DIAM-DIAM (KARENA INTERNET BLIP), UBAH INDIKATOR JADI KUNING
            console.log("Auto-sync gagal ditarik.");
            const statusEl = document.getElementById('sync-status');
            if(statusEl) {
@@ -230,26 +238,20 @@
         });
     }
 
-    // ========================================================
-    // ANTI-THROTTLING: MENGGUNAKAN WEB WORKER AGAR TIDAK DITIDURKAN BROWSER
-    // ========================================================
-    // Kita membuat "pekerja virtual" di luar tab utama khusus untuk memegang stopwatch
     const workerScript = `
       setInterval(() => {
         postMessage('waktunya_sync');
-      }, 300000); // 300.000 ms = 5 Menit mutlak
+      }, 300000); 
     `;
     const workerBlob = new Blob([workerScript], { type: "application/javascript" });
     const timerWorker = new Worker(URL.createObjectURL(workerBlob));
 
-    // Saat pekerja virtual berteriak "waktunya_sync", jalankan silentSync()
     timerWorker.onmessage = function(e) {
       if (e.data === 'waktunya_sync') {
         silentSync();
       }
     };
 
-    // Tetap pertahankan pemicu instan saat panitia kembali membuka tab
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "visible") silentSync(); 
     });
@@ -290,6 +292,8 @@
     }
     renderHistory();
 
+    // =============== LOGIKA KELOMPOK BARU DIMULAI DI SINI ===============
+    
     function onScanSuccess(decodedText, decodedResult) {
       if (isProcessing) return;
       
@@ -309,21 +313,29 @@
       readerDiv.classList.add('blur-scanner'); 
 
       let person = localDB[nimSementara];
+      
+      // Ambil nama kelompok (jika peserta tambahan, beri label default)
+      let namaKel = person ? person.kelompok : "Peserta Tambahan / Belum Terdaftar";
+
       if (!person || person.rgsD !== true) {
-          setupUI_Datang(namaSementara, nimSementara, !person);
+          setupUI_Datang(namaSementara, nimSementara, !person, namaKel);
       } else if (person.rgsP !== true) {
-          setupUI_Pulang(namaSementara, nimSementara, person.waktuD, person.note, person.jurusan, person.prodi);
+          setupUI_Pulang(namaSementara, nimSementara, person.waktuD, person.note, person.jurusan, person.prodi, namaKel);
       } else {
           alert("⚠️ Peserta " + namaSementara + " sudah absen pulang!");
           batalkanScan();
       }
     }
 
-    function setupUI_Datang(nama, nim, isBaru) {
+    function setupUI_Datang(nama, nim, isBaru, kelompok) {
       document.getElementById('form-title').innerText = isBaru ? "Konfirmasi Datang (Peserta Baru)" : "Konfirmasi Kedatangan";
       document.getElementById('form-title').style.color = "var(--primary-color)";
       document.getElementById('display-nama').innerText = nama;
       document.getElementById('display-nim').innerText = "NIM: " + nim;
+      
+      // Tampilkan Kelompok
+      document.getElementById('display-kelompok').innerText = isBaru ? "⚠️ " + kelompok : "👥 " + kelompok;
+
       document.getElementById('box-pulang-info').style.display = 'none';
       document.getElementById('group-ticket').style.display = 'block'; 
       document.getElementById('box-prodi-jurusan').style.display = isBaru ? 'flex' : 'none';
@@ -335,11 +347,15 @@
       formReview.style.display = 'block';
     }
 
-    function setupUI_Pulang(nama, nim, waktuD, noteD, jurusan, prodi) {
+    function setupUI_Pulang(nama, nim, waktuD, noteD, jurusan, prodi, kelompok) {
       document.getElementById('form-title').innerText = "Konfirmasi Kepulangan";
       document.getElementById('form-title').style.color = "var(--blue-color)";
       document.getElementById('display-nama').innerText = nama;
       document.getElementById('display-nim').innerText = "NIM: " + nim;
+      
+      // Tampilkan Kelompok
+      document.getElementById('display-kelompok').innerText = "👥 " + kelompok;
+
       document.getElementById('box-pulang-info').style.display = 'block';
       let infoJP = (jurusan && prodi) ? `${jurusan} (${prodi})` : "Belum ada terdata";
       document.getElementById('display-jurusan-prodi').innerText = infoJP;
@@ -387,7 +403,8 @@
       let historyText = "";
 
       if (!localDB[nimKey]) {
-         localDB[nimKey] = { rgsD: true, waktuD: "Baru saja", rgsP: false, note: noteVal, jurusan: pJurusan, prodi: pProdi };
+         // Peserta Baru ditambahkan ke LocalDB beserta properti kelompok default
+         localDB[nimKey] = { rgsD: true, waktuD: "Baru saja", rgsP: false, note: noteVal, jurusan: pJurusan, prodi: pProdi, kelompok: "Peserta Tambahan" };
          historyText = "✅ Datang: " + nama;
       } else if (!localDB[nimKey].rgsD) {
          localDB[nimKey].rgsD = true; localDB[nimKey].note = noteVal;
