@@ -55,11 +55,10 @@
     .history-empty { text-align: center; color: #999; font-size: 0.85rem; font-style: italic; margin-top: 10px; }
     .blur-scanner { filter: blur(4px) grayscale(50%); pointer-events: none; }
     
-    /* Tambahan Tombol Sheet & UI Kelompok */
     .btn-sheet { display: block; width: 100%; background-color: #0f9d58; color: white; text-align: center; padding: 12px; border-radius: 6px; text-decoration: none; font-weight: 600; margin-top: 15px; font-size: 0.95rem; border: none; cursor: pointer; transition: 0.2s; }
     .btn-sheet:hover { background-color: #0b8043; }
     .scanned-nim { font-size: 0.9rem; color: #666; margin-bottom: 5px;}
-    .scanned-kelompok { display: inline-block; background: #eee; padding: 5px 10px; border-radius: 6px; font-size: 0.85rem; font-weight: 600; color: #444; margin-bottom: 15px; border: 1px solid #ddd; }
+    .scanned-kelompok { display: inline-block; background: #eee; padding: 5px 10px; border-radius: 6px; font-size: 0.85rem; font-weight: 600; color: #444; margin-bottom: 10px; border: 1px solid #ddd; }
   </style>
 </head>
 <body>
@@ -70,11 +69,8 @@
         <img src="lg-infinity.png" alt="Logo"> Pindai QR Code
       </div>
       <div class="panel-body">
-        
         <div id="sync-status" class="sync-indicator">⏳ Memeriksa status data...</div>
-        
         <div id="reader"></div>
-        
         <div class="guide-mini">
           <div style="font-size: 0.95rem; margin-bottom: 8px;"><strong>📖 SOP Pengurus Registrasi:</strong></div>
           <ol>
@@ -85,8 +81,6 @@
           </ol>
           <div class="alert-mini">⚠️ Jika terjadi lag parah, segera beralih catat manual di Google Sheet SPS!</div>
         </div>
-
-        <!-- Tombol Google Sheet Baru -->
         <a href="https://docs.google.com/spreadsheets/d/1U-XQ6iAhImiQ1Fta7dc_7Mp_sungcMcDjDic_uLFzW8/edit?usp=sharing" target="_blank" class="btn-sheet">
           📄 Buka Google Sheet Manual
         </a>
@@ -97,7 +91,6 @@
     <div class="panel">
       <div class="panel-header" style="background-color: #333;">Verifikasi & Riwayat</div>
       <div class="panel-body">
-        
         <div class="idle-state" id="idle-state"><p>Sistem Siap. Menunggu pindaian kamera...</p></div>
 
         <div class="form-review" id="form-review">
@@ -105,8 +98,22 @@
           <div class="scanned-info" id="display-nama">-</div>
           <div class="scanned-nim" id="display-nim">-</div>
           
-          <!-- Indikator Kelompok Baru -->
           <div class="scanned-kelompok" id="display-kelompok">Kelompok: -</div>
+          
+          <!-- Indikator Peran & Fashion Show -->
+          <div id="display-peran" style="margin-bottom: 15px; font-size: 0.9rem; font-weight: bold;"></div>
+
+          <!-- Checkbox Wajib (Hanya Muncul Jika Syarat Terpenuhi) -->
+          <div class="input-group" id="group-scorecard" style="display: none;">
+            <label class="checkbox-label" style="background: #fff3cd; color: #856404; border: 1px solid #ffeeba;">
+              <input type="checkbox" id="input-scorecard"> ⚠️ WAJIB: Berikan Score Card (Ketua)
+            </label>
+          </div>
+          <div class="input-group" id="group-gelang" style="display: none;">
+            <label class="checkbox-label" style="background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb;">
+              <input type="checkbox" id="input-gelang"> ⚠️ WAJIB: Berikan Gelang Fashion Show
+            </label>
+          </div>
           
           <div class="pulang-info-box" id="box-pulang-info">
             <strong>Jurusan/Prodi:</strong> <span id="display-jurusan-prodi"></span><br>
@@ -155,7 +162,7 @@
   </div>
 
   <script>
-    // ⚠️ MASUKKAN URL APPS SCRIPT ANDA DI SINI
+    // ⚠️ GANTI LINK INI DENGAN DEPLOYMENT APP SCRIPT YANG BARU!
     const urlGoogleScript = "https://script.google.com/macros/s/AKfycbyL1RtuBShto37PYmd17FTBaZ3gF3o15G7FDoafA8vf0rTtsYJcjnygBhe2nT0tqK3k/exec";
 
     let isProcessing = false;
@@ -176,7 +183,6 @@
 
     const jurusanMap = { "MAN": ["IBM", "CBM", "DBM", "BMM", "TAX"], "IMT": ["AD", "AI"], "VCD": ["GD", "ILX", "DMD"] };
 
-    // Mengecek & Memuat Data Otomatis Saat Web Dibuka
     window.onload = () => {
         let lastSync = localStorage.getItem('lastSyncTime');
         const statusEl = document.getElementById('sync-status');
@@ -238,23 +244,11 @@
         });
     }
 
-    const workerScript = `
-      setInterval(() => {
-        postMessage('waktunya_sync');
-      }, 300000); 
-    `;
+    const workerScript = `setInterval(() => { postMessage('waktunya_sync'); }, 300000);`;
     const workerBlob = new Blob([workerScript], { type: "application/javascript" });
     const timerWorker = new Worker(URL.createObjectURL(workerBlob));
-
-    timerWorker.onmessage = function(e) {
-      if (e.data === 'waktunya_sync') {
-        silentSync();
-      }
-    };
-
-    document.addEventListener("visibilitychange", () => {
-      if (document.visibilityState === "visible") silentSync(); 
-    });
+    timerWorker.onmessage = function(e) { if (e.data === 'waktunya_sync') silentSync(); };
+    document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") silentSync(); });
 
     function updateJurusan() {
       const prodiVal = document.getElementById('input-prodi').value;
@@ -292,11 +286,8 @@
     }
     renderHistory();
 
-    // =============== LOGIKA KELOMPOK BARU DIMULAI DI SINI ===============
-    
     function onScanSuccess(decodedText, decodedResult) {
       if (isProcessing) return;
-      
       let dataPecah = decodedText.split('+');
       if (dataPecah.length < 3) { alert("❌ QR Code Ditolak. Format salah."); return; }
 
@@ -313,28 +304,43 @@
       readerDiv.classList.add('blur-scanner'); 
 
       let person = localDB[nimSementara];
-      
-      // Ambil nama kelompok (jika peserta tambahan, beri label default)
       let namaKel = person ? person.kelompok : "Peserta Tambahan / Belum Terdaftar";
 
+      // Panggil fungsi setup dengan passing parameter 'person'
       if (!person || person.rgsD !== true) {
-          setupUI_Datang(namaSementara, nimSementara, !person, namaKel);
+          setupUI_Datang(namaSementara, nimSementara, !person, namaKel, person);
       } else if (person.rgsP !== true) {
-          setupUI_Pulang(namaSementara, nimSementara, person.waktuD, person.note, person.jurusan, person.prodi, namaKel);
+          setupUI_Pulang(namaSementara, nimSementara, person.waktuD, person.note, person.jurusan, person.prodi, namaKel, person);
       } else {
           alert("⚠️ Peserta " + namaSementara + " sudah absen pulang!");
           batalkanScan();
       }
     }
 
-    function setupUI_Datang(nama, nim, isBaru, kelompok) {
+    function setupUI_Datang(nama, nim, isBaru, kelompok, person) {
       document.getElementById('form-title').innerText = isBaru ? "Konfirmasi Datang (Peserta Baru)" : "Konfirmasi Kedatangan";
       document.getElementById('form-title').style.color = "var(--primary-color)";
       document.getElementById('display-nama').innerText = nama;
       document.getElementById('display-nim').innerText = "NIM: " + nim;
-      
-      // Tampilkan Kelompok
       document.getElementById('display-kelompok').innerText = isBaru ? "⚠️ " + kelompok : "👥 " + kelompok;
+
+      // Logika Penentuan Peran & Fashion Show
+      let isKetua = person ? person.ketua : false;
+      let isFashion = person ? person.fashion : false;
+      
+      let statusHtml = isKetua ? "👑 Ketua Kelompok " : "👤 Anggota Kelompok ";
+      if (isFashion) statusHtml += " | 👗 Peserta Fashion Show";
+      
+      let elPeran = document.getElementById('display-peran');
+      elPeran.innerText = statusHtml;
+      elPeran.style.color = isKetua ? "#d32f2f" : "#555";
+
+      // Tampilkan Checkbox Wajib jika syarat terpenuhi
+      document.getElementById('group-scorecard').style.display = isKetua ? 'block' : 'none';
+      document.getElementById('input-scorecard').checked = false;
+
+      document.getElementById('group-gelang').style.display = isFashion ? 'block' : 'none';
+      document.getElementById('input-gelang').checked = false;
 
       document.getElementById('box-pulang-info').style.display = 'none';
       document.getElementById('group-ticket').style.display = 'block'; 
@@ -347,14 +353,27 @@
       formReview.style.display = 'block';
     }
 
-    function setupUI_Pulang(nama, nim, waktuD, noteD, jurusan, prodi, kelompok) {
+    function setupUI_Pulang(nama, nim, waktuD, noteD, jurusan, prodi, kelompok, person) {
       document.getElementById('form-title').innerText = "Konfirmasi Kepulangan";
       document.getElementById('form-title').style.color = "var(--blue-color)";
       document.getElementById('display-nama').innerText = nama;
       document.getElementById('display-nim').innerText = "NIM: " + nim;
-      
-      // Tampilkan Kelompok
       document.getElementById('display-kelompok').innerText = "👥 " + kelompok;
+
+      // Logika Penentuan Peran & Fashion Show saat pulang
+      let isKetua = person ? person.ketua : false;
+      let isFashion = person ? person.fashion : false;
+      
+      let statusHtml = isKetua ? "👑 Ketua Kelompok " : "👤 Anggota Kelompok ";
+      if (isFashion) statusHtml += " | 👗 Peserta Fashion Show";
+      
+      let elPeran = document.getElementById('display-peran');
+      elPeran.innerText = statusHtml;
+      elPeran.style.color = isKetua ? "#d32f2f" : "#555";
+
+      // Sembunyikan Checkbox karena ini absen pulang
+      document.getElementById('group-scorecard').style.display = 'none';
+      document.getElementById('group-gelang').style.display = 'none';
 
       document.getElementById('box-pulang-info').style.display = 'block';
       let infoJP = (jurusan && prodi) ? `${jurusan} (${prodi})` : "Belum ada terdata";
@@ -378,6 +397,22 @@
     function submitData() {
       if (isSubmitting) return; 
       isSubmitting = true;
+
+      // === VALIDASI CHECKBOX WAJIB ===
+      const elScorecard = document.getElementById('group-scorecard');
+      const elGelang = document.getElementById('group-gelang');
+
+      if (elScorecard.style.display === 'block' && !document.getElementById('input-scorecard').checked) {
+          alert("❌ Mohon centang WAJIB Score Card untuk Ketua Kelompok sebelum mengirim data!");
+          isSubmitting = false;
+          return; 
+      }
+      if (elGelang.style.display === 'block' && !document.getElementById('input-gelang').checked) {
+          alert("❌ Mohon centang WAJIB Gelang Fashion Show sebelum mengirim data!");
+          isSubmitting = false;
+          return; 
+      }
+      // ===============================
 
       const isTicket = document.getElementById('input-ticket').checked;
       const noteVal = document.getElementById('input-note').value;
@@ -403,8 +438,7 @@
       let historyText = "";
 
       if (!localDB[nimKey]) {
-         // Peserta Baru ditambahkan ke LocalDB beserta properti kelompok default
-         localDB[nimKey] = { rgsD: true, waktuD: "Baru saja", rgsP: false, note: noteVal, jurusan: pJurusan, prodi: pProdi, kelompok: "Peserta Tambahan" };
+         localDB[nimKey] = { rgsD: true, waktuD: "Baru saja", rgsP: false, note: noteVal, jurusan: pJurusan, prodi: pProdi, kelompok: "Peserta Tambahan", ketua: false, fashion: false };
          historyText = "✅ Datang: " + nama;
       } else if (!localDB[nimKey].rgsD) {
          localDB[nimKey].rgsD = true; localDB[nimKey].note = noteVal;
